@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+/* Minimal smooth transitions */
+.container { max-width: 1024px; }
+
+/* Toast animation */
+@keyframes slide-up {
+  from { transform: translateY(12px); opacity: 0 }
+  to { transform: translateY(0); opacity: 1 }
+}
+.animate-slide-up { animation: slide-up 320ms ease-out; }
+
+/* Highlight pulse for today's card */
+@keyframes highlight-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(14,165,164,0.0); }
+  50% { box-shadow: 0 8px 20px -8px rgba(14,165,164,0.35); }
+  100% { box-shadow: 0 0 0 0 rgba(14,165,164,0.0); }
+}
+.today-highlight { animation: highlight-pulse 1.2s ease-in-out; }
+
+/* Ensure numeric and currency inputs are legible in dark mode */
+@media (prefers-color-scheme: dark) {
+  input[type="number"], input[type="date"], input[inputmode="decimal"], input[type="text"], textarea, select {
+    @apply bg-gray-700 text-gray-100 border-gray-600;
+  }
+  /* placeholders */
+  input::placeholder, textarea::placeholder, select::placeholder {
+    @apply text-gray-400;
+  }
+  /* ensure select text and options are legible */
+  select { @apply bg-gray-700 text-gray-100 border-gray-600; }
+  select option { background-color: #0f1724; color: #e6eef6; }
+}
+
+/* Also support dark mode via Tailwind 'dark' class on root */
+.dark input[type="number"], .dark input[type="date"], .dark input[inputmode="decimal"], .dark input[type="text"], .dark textarea, .dark select {
+  @apply bg-gray-700 text-gray-100 border-gray-600;
+}
+.dark input::placeholder, .dark textarea::placeholder, .dark select::placeholder {
+  @apply text-gray-400;
+}
+.dark select { @apply bg-gray-700 text-gray-100 border-gray-600; }
+.dark select option { background-color: #0f1724; color: #e6eef6; }
+
+/* Explicit light-mode defaults when `.dark` is not present (override any dark leaks) */
+:root:not(.dark) input[type="number"], :root:not(.dark) input[type="date"], :root:not(.dark) input[inputmode="decimal"], :root:not(.dark) input[type="text"], :root:not(.dark) textarea, :root:not(.dark) select {
+  background: #ffffff !important;
+  color: #0f1724 !important;
+  border-color: #e5e7eb !important;
+}
+:root:not(.dark) input::placeholder, :root:not(.dark) textarea::placeholder, :root:not(.dark) select::placeholder {
+  color: #9ca3af !important;
+}
+:root:not(.dark) select option { background-color: #ffffff !important; color: #0f1724 !important; }
+
+/* More specific rule for the CurrencyInput which uses inputMode="decimal" */
+input[inputmode="decimal"] { caret-color: white; }
+
+/* Recharts tooltip: dark and legible */
+.recharts-tooltip-wrapper .recharts-default-tooltip { transition: none !important; }
+@media (prefers-color-scheme: dark) {
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background: rgba(15, 23, 36, 0.98) !important;
+    color: #e6eef6 !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.6) !important;
+    padding: 8px 10px !important;
+    border-radius: 6px !important;
+  }
+  .recharts-tooltip-wrapper .recharts-default-tooltip .label { color: #9fb6c8 !important; font-weight: 600 !important; }
+  .recharts-tooltip-wrapper .recharts-default-tooltip td, .recharts-tooltip-wrapper .recharts-default-tooltip div { color: #e6eef6 !important; }
+}
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: rgba(15, 23, 36, 0.98) !important;
+  color: #e6eef6 !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.6) !important;
+  padding: 8px 10px !important;
+  border-radius: 6px !important;
+}
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip .label { color: #9fb6c8 !important; font-weight: 600 !important; }
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip td, .dark .recharts-tooltip-wrapper .recharts-default-tooltip div { color: #e6eef6 !important; }
+
+/* Strong overrides for Recharts tooltip and active dot to handle inline styles */
+.recharts-tooltip-wrapper > div, .recharts-tooltip-wrapper > div *,
+.dark .recharts-tooltip-wrapper > div, .dark .recharts-tooltip-wrapper > div * {
+  background: rgba(15,23,36,0.98) !important;
+  color: #e6eef6 !important;
+}
+.recharts-tooltip-wrapper .recharts-tooltip-cursor { stroke: rgba(14,165,164,0.12) !important; }
+.recharts-dot, .recharts-active-dot { opacity: 1 !important; }
+.recharts-dot circle, .recharts-active-dot circle { fill: #0ea5a4 !important; stroke: #0ea5a4 !important; }
+
