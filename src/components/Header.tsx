@@ -17,7 +17,7 @@ export default function Header() {
   return (
     <header className="p-4 border-b bg-white/60 dark:bg-gray-800/60">
       <div className="container mx-auto flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Finance Manager</h1>
+        <h1 className="text-lg font-semibold"><Link to="/">Finance Manager</Link></h1>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex space-x-4 items-center">
