@@ -8,10 +8,13 @@ import { useFinanceStore } from '../store/useFinanceStore'
 import { format } from 'date-fns'
 import { calculate50_30_20, computeSmartDailyProjection } from '../utils/finance'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { getLocalISODate, getLocalISODateFromDate } from '../utils/date'
 
 export default function Home() {
   const { profile, fixedExpenses, variableExpenses, addVariableExpense } = useFinanceStore()
   const { user } = useAuth()
+
+  console.log(variableExpenses)
 
   const netSalary = profile?.netSalary ?? 0
   const payDay = profile?.payDay ?? 1
@@ -28,23 +31,32 @@ export default function Home() {
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
-      const key = d.toISOString().slice(0, 10)
+      const key = getLocalISODateFromDate(d)
       map.set(key, 0)
     }
     variableExpenses.forEach(v => {
-      const d = new Date(v.date).toISOString().slice(0, 10)
+      const d = v.date.split('T')[0]
       if (map.has(d)) {
         map.set(d, (map.get(d) || 0) + v.amount)
       }
     })
-    return Array.from(map.entries()).map(([date, amount]) => ({ date: format(new Date(date), 'dd/MM'), amount }))
+    return Array.from(map.entries()).map(([date, amount]) => {
+      const [year, month, day] = date.split('-')
+
+      return {
+        date: `${day}/${month}`,
+        amount
+      }
+    })
   }, [variableExpenses])
 
   // highlight today's card when a new expense for today is added
   const [highlight, setHighlight] = useState(false)
   const prevTodaySpent = useRef(0)
-  const todayKey = new Date().toISOString().slice(0,10)
-  const todaySpent = variableExpenses.filter(v => new Date(v.date).toISOString().slice(0,10) === todayKey).reduce((s, v) => s + v.amount, 0)
+  const todayKey = getLocalISODate()
+  const todaySpent = variableExpenses
+    .filter(v => v.date.split('T')[0] === todayKey)
+    .reduce((s, v) => s + v.amount, 0)
 
   useEffect(() => {
     if (todaySpent > prevTodaySpent.current) {
@@ -57,7 +69,7 @@ export default function Home() {
 
   // modal for quick add
   const [openAdd, setOpenAdd] = useState(false)
-  const todayISO = new Date().toISOString().slice(0,10)
+  const todayISO = getLocalISODate()
   const [newTitle, setNewTitle] = useState('')
   const [newAmount, setNewAmount] = useState<number>(0)
   const [newDate, setNewDate] = useState<string>(todayISO)
@@ -66,7 +78,7 @@ export default function Home() {
 
   async function handleQuickAdd(e?: React.FormEvent) {
     e?.preventDefault()
-    const item = { id: Date.now().toString(), title: newTitle, amount: newAmount, category: newCategory, date: new Date(newDate).toISOString() }
+    const item = { id: Date.now().toString(), title: newTitle, amount: newAmount, category: newCategory, date: newDate }
     addVariableExpense(item as any)
     try {
       if (user) await addVariableExpenseToUser(user.uid, item)
@@ -137,6 +149,7 @@ export default function Home() {
           <h3 className="font-medium mb-2">Resumo</h3>
           <div className="text-sm text-gray-500">Gastos fixos: R$ {allocations.totalFixed.toFixed(2)}</div>
           <div className="text-sm text-gray-500">Disponível para variáveis: R$ {allocations.availableForVariables.toFixed(2)}</div>
+          <div className="text-sm text-gray-500">Gastos variáveis totais: R$ {proj.totalVariableSpent.toFixed(2)}</div>
           <div className="mt-3 text-lg font-semibold">Total restante: R$ {proj.totalRemaining.toFixed(2)}</div>
         </div>
 

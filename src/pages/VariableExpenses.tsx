@@ -5,6 +5,7 @@ import { addVariableExpenseToUser, deleteVariableExpenseFromUser, updateVariable
 import Toast from '../components/Toast'
 import CurrencyInput from '../components/CurrencyInput'
 import Modal from '../components/Modal'
+import { getLocalISODate } from '../utils/date'
 
 export default function VariableExpenses() {
   const { variableExpenses, addVariableExpense } = useFinanceStore()
@@ -12,7 +13,7 @@ export default function VariableExpenses() {
 
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState<number>(0)
-  const todayISO = new Date().toISOString().slice(0,10)
+  const todayISO = getLocalISODate()
   const [date, setDate] = useState<string>(todayISO)
   const [category, setCategory] = useState('outros')
   const [toast, setToast] = useState<string | null>(null)
