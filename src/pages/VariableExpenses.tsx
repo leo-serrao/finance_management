@@ -5,7 +5,6 @@ import { addVariableExpenseToUser, deleteVariableExpenseFromUser, updateVariable
 import Toast from '../components/Toast'
 import CurrencyInput from '../components/CurrencyInput'
 import Modal from '../components/Modal'
-import { getLocalISODate } from '../utils/date'
 
 export default function VariableExpenses() {
   const { variableExpenses, addVariableExpense } = useFinanceStore()
@@ -13,12 +12,11 @@ export default function VariableExpenses() {
 
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState<number>(0)
-  const todayISO = getLocalISODate()
+  const todayISO = new Date().toISOString().slice(0,10)
   const [date, setDate] = useState<string>(todayISO)
   const [category, setCategory] = useState('outros')
   const [toast, setToast] = useState<string | null>(null)
   const [editing, setEditing] = useState<any | null>(null)
-  const formatDate = (dateString: string) => { const cleanDate = dateString.split("T")[0]; const [year, month, day] = cleanDate.split("-"); return `${day}/${month}/${year}` }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -26,7 +24,7 @@ export default function VariableExpenses() {
       setToast('Preencha título e valor maior que 0')
       return
     }
-    const item = { id: Date.now().toString(), title: title.trim(), amount, category, date}
+    const item = { id: Date.now().toString(), title: title.trim(), amount, category, date: new Date(date).toISOString() }
     addVariableExpense(item as any)
     try {
       if (user) await addVariableExpenseToUser(user.uid, item)
@@ -52,13 +50,13 @@ export default function VariableExpenses() {
   }
 
   function openEdit(item: any) {
-    setEditing({ ...item, date: item.date || todayISO })
+    setEditing({ ...item, date: item.date ? new Date(item.date).toISOString().slice(0,10) : todayISO })
   }
 
   async function saveEdit() {
     if (!user || !editing) return
     try {
-      const upd = { title: editing.title, amount: editing.amount, category: editing.category, date: editing.date }
+      const upd = { title: editing.title, amount: editing.amount, category: editing.category, date: new Date(editing.date).toISOString() }
       await updateVariableExpenseInUser(user.uid, editing.id, upd)
       setEditing(null)
       setToast('Gasto atualizado')
@@ -90,8 +88,11 @@ export default function VariableExpenses() {
         {variableExpenses.map(v => (
           <li key={v.id} className="p-3 bg-white dark:bg-gray-800 rounded shadow flex justify-between items-center">
             <div className="min-w-0">
-              <div className="font-medium truncate">{v.title}</div>
-              <div className="text-sm text-gray-500">{formatDate(v.date)}</div>
+              <div className="min-w-0 flex items-center gap-2">
+                  <div className="font-medium truncate">{v.title}</div>
+                  <div className="text-sm text-gray-500">{new Date(v.date).toLocaleDateString()}</div>
+              </div>
+              <div className="text-sm text-gray-500">{v.category.charAt(0).toUpperCase() + v.category.slice(1)}</div>
             </div>
             <div className="flex items-center gap-3">
               <div className="font-semibold">R$ {v.amount.toFixed(2)}</div>
