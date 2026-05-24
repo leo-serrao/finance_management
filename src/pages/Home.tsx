@@ -115,7 +115,7 @@ export default function Home() {
           <form onSubmit={(e)=>handleQuickAdd(e)} className="space-y-2">
             <input placeholder="Título" value={newTitle} onChange={e=>setNewTitle(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
             <CurrencyInput value={newAmount} onChange={setNewAmount} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
+            <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} className="w-full p-2 h-10 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100 appearance-none box-border text-left leading-6 max-w-full" />
             <select value={newCategory} onChange={e=>setNewCategory(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100">
               <option value="alimentacao">Alimentação</option>
               <option value="transporte">Transporte</option>
