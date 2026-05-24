@@ -41,11 +41,34 @@ export default function Header() {
 
         {/* Mobile toggle */}
         <div className="md:hidden flex items-center gap-2">
-          <button onClick={toggle} aria-label="Toggle theme" className="px-2 py-1 rounded border">
+          <button
+            onClick={toggle}
+            aria-label="Toggle theme"
+            className="w-10 h-10 flex items-center justify-center rounded border"
+          >
             {theme === 'dark' ? '🌙' : '☀️'}
           </button>
-          <button onClick={() => setOpen(v => !v)} aria-label="Open menu" className="p-2 rounded border">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d={open ? 'M6 18L18 6M6 6l12 12' : 'M3 12h18M3 6h18M3 18h18'} /></svg>
+
+          <button
+            onClick={() => setOpen(v => !v)}
+            aria-label="Open menu"
+            className="w-10 h-10 flex items-center justify-center rounded border"
+          >
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d={open
+                  ? 'M6 18L18 6M6 6l12 12'
+                  : 'M3 12h18M3 6h18M3 18h18'}
+              />
+            </svg>
           </button>
         </div>
       </div>
