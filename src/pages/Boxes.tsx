@@ -102,25 +102,29 @@ export default function Boxes() {
 
       {open && (
         <Modal title={editing ? 'Editar caixinha' : 'Nova caixinha'} onClose={() => setOpen(false)}>
-          <form onSubmit={(e)=>handleSave(e)} className="space-y-2">
-            <input placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Emoji (opcional)</label>
-              <div className="flex items-center gap-2">
-                <input placeholder="Digite um emoji ou escolha abaixo" value={emoji} onChange={e=>setEmoji(e.target.value)} className="p-2 border rounded w-full bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
+          <div className="w-full px-3">
+            <div className="max-w-sm mx-auto max-h-[85vh] overflow-y-auto p-2 sm:p-4 bg-transparent">
+              <form onSubmit={(e)=>handleSave(e)} className="space-y-3">
+              <input placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} className="w-full p-2 sm:p-3 h-10 sm:h-11 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Emoji (opcional)</label>
+                <div className="flex items-center gap-2">
+                  <input placeholder="Digite um emoji ou escolha abaixo" value={emoji} onChange={e=>setEmoji(e.target.value)} className="p-2 sm:p-3 h-10 sm:h-11 border rounded w-full bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
+                </div>
+                <div className="mt-2 grid grid-flow-col auto-cols-min gap-2 justify-items-center overflow-x-auto py-1">
+                  {['🚗','✈️','🛡','💻','🏠','🎮','📱','💰'].map(em => (
+                    <button key={em} type="button" onClick={() => setEmoji(em)} className="w-8 h-8 flex items-center justify-center rounded-md border text-base transition-colors duration-150 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">{em}</button>
+                  ))}
+                </div>
               </div>
-              <div className="mt-2 flex gap-2">
-                {['🚗','✈️','🛡','💻','🏠','🎮','📱','💰'].map(em => (
-                  <button key={em} type="button" onClick={() => setEmoji(em)} className="px-2 py-1 rounded border text-lg">{em}</button>
-                ))}
+              <CurrencyInput value={amount} onChange={setAmount} className="w-full p-2 sm:p-3 h-10 sm:h-11 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
+              <div className="flex gap-3 justify-end items-center py-2">
+                <button type="button" onClick={()=>setOpen(false)} className="px-4 h-10 flex items-center justify-center rounded border">Cancelar</button>
+                <button type="submit" className="px-4 h-10 flex items-center justify-center rounded bg-teal-500 text-white">Salvar</button>
               </div>
+              </form>
             </div>
-            <CurrencyInput value={amount} onChange={setAmount} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={()=>setOpen(false)} className="px-3 py-1 rounded border">Cancelar</button>
-              <button type="submit" className="px-3 py-1 rounded bg-teal-500 text-white">Salvar</button>
-            </div>
-          </form>
+          </div>
         </Modal>
       )}
 
