@@ -59,7 +59,9 @@ export function getNextPayDate(from: Date, payDay: number): Date {
   const day = from.getDate()
 
   let candidate = new Date(year, month, payDay)
-  if (day > payDay) {
+  // treat the payday as the start of the new cycle: if today is the payday
+  // or passed it, the next pay date should be next month
+  if (day >= payDay) {
     // next month
     candidate = new Date(year, month + 1, payDay)
   }
@@ -94,7 +96,9 @@ export function computeDailyProjection(
   // note: calculate50_30_20 accepts savingsPercent as third param; pass through
   const allocations2 = calculate50_30_20(netSalary, fixedExpenses, savingsPercent)
   const nextPay = getNextPayDate(today, payDay)
-  const daysLeft = daysUntil(nextPay, today) + 1 // include today
+  // do NOT include the payday itself in the previous period; daysLeft is
+  // the number of days remaining until the payday (exclusive)
+  const daysLeft = daysUntil(nextPay, today)
 
   // compute total spent so far in this pay period (from previous pay date exclusive)
   const prevPay = new Date(nextPay)
@@ -103,17 +107,21 @@ export function computeDailyProjection(
   const prevPayKey = getLocalISODateFromDate(prevPay)
   const todayKey = getLocalISODateFromDate(today)
 
+  // period is (prevPay, nextPay) i.e. dates strictly greater than prevPay and
+  // strictly less than nextPay. For spentSoFar we consider dates up to yesterday
+  // (exclude today) so compare v.date > prevPayKey && v.date < todayKey
   const spentSoFar = variableExpenses
-    .filter(v => v.date >= prevPayKey && v.date < todayKey)
+    .filter(v => v.date > prevPayKey && v.date < todayKey)
     .reduce((s, v) => s + v.amount, 0)
 
   const totalAvailable = allocations2.availableForVariables
 
-  const totalRemaining = Math.max(0, totalAvailable - spentSoFar)
+  const totalRemaining = totalAvailable - spentSoFar
 
   const todayBudget = daysLeft > 0 ? totalRemaining / daysLeft : 0
 
   const projection: DailyProjection[] = []
+  // projection covers today up to the day before payday
   for (let i = 0; i < daysLeft; i++) {
     const d = new Date(today)
     d.setDate(d.getDate() + i)
@@ -130,22 +138,24 @@ export function computeSmartDailyProjection(
   payDay: number,
   savingsPercent: number = 0.2,
   today: Date = new Date()
-): { todayBudget: number; daysRemaining: number; totalRemaining: number; totalVariableSpent: number; projection: DailyProjection[] } {
+): { todayBudget: number; daysRemaining: number; totalRemaining: number; totalVariableSpent: number; projection: DailyProjection[]; tomorrowBudget: number } {
   const allocations = calculate50_30_20(netSalary, fixedExpenses, savingsPercent)
+
   const nextPay = getNextPayDate(today, payDay)
-  const daysLeft = daysUntil(nextPay, today) + 1 // include today
+  // days until payday (exclusive)
+  const daysLeft = daysUntil(nextPay, today)
 
   const prevPay = new Date(nextPay)
   prevPay.setMonth(nextPay.getMonth() - 1)
 
-  // group spent per day within period
+  // group spent per day within period (prevPay, nextPay) exclusive boundaries
   const spentByDay = new Map<string, number>()
   const prevPayKey = getLocalISODateFromDate(prevPay)
   const nextPayKey = getLocalISODateFromDate(nextPay)
   const todayKey = getLocalISODateFromDate(today)
 
   variableExpenses.forEach(v => {
-    if (v.date >= prevPayKey && v.date <= nextPayKey) {
+    if (v.date > prevPayKey && v.date < nextPayKey) {
       spentByDay.set(v.date, (spentByDay.get(v.date) || 0) + v.amount)
     }
   })
@@ -155,7 +165,7 @@ export function computeSmartDailyProjection(
     .reduce((s, [, amt]) => s + amt, 0)
 
   const totalAvailable = allocations.availableForVariables
-  const totalRemaining = Math.max(0, totalAvailable - spentSoFar)
+  const totalRemaining = totalAvailable - spentSoFar
 
   const daysRemaining = daysLeft
   const baseline = daysRemaining > 0 ? totalRemaining / daysRemaining : 0
@@ -168,11 +178,11 @@ export function computeSmartDailyProjection(
   const futureDays = Math.max(0, daysRemaining - 1)
 
   if (daysRemaining === 0) {
-    return { todayBudget: 0, daysRemaining: 0, totalRemaining: 0, totalVariableSpent: 0, projection: [] }
+    return { todayBudget: 0, daysRemaining: 0, totalRemaining: 0, totalVariableSpent: 0, projection: [], tomorrowBudget: 0 }
   }
 
-  // Calculate today's budget considering today's spend
-  let todayBudget = Math.max(0, baseline - todaySpend)
+  // Calculate today's budget considering today's spend (can be negative)
+  let todayBudget = baseline - todaySpend
 
   // If today underspent, redistribute surplus to future days; if overspent, reduce future budgets
   if (todaySpend < baseline) {
@@ -184,19 +194,21 @@ export function computeSmartDailyProjection(
       d.setDate(d.getDate() + i)
       projection.push({ date: getLocalISODateFromDate(d), budget: Math.round(futureBudget * 100) / 100 })
     }
-    return { todayBudget: Math.round(todayBudget * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection }
+    const tomorrowBudget = projection.length > 1 ? projection[1].budget : Math.round(futureBudget * 100) / 100
+    return { todayBudget: Math.round(todayBudget * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection, tomorrowBudget }
   }
 
   if (todaySpend > baseline) {
     const deficit = todaySpend - baseline
-    const futureBudgetRaw = futureDays > 0 ? Math.max(0, baseline - deficit / futureDays) : 0
-    projection.push({ date: todayKey, budget: Math.round(Math.max(0, baseline - todaySpend) * 100) / 100 })
+    const futureBudgetRaw = futureDays > 0 ? baseline - deficit / futureDays : 0
+    projection.push({ date: todayKey, budget: Math.round((baseline - todaySpend) * 100) / 100 })
     for (let i = 1; i < daysRemaining; i++) {
       const d = new Date(today)
       d.setDate(d.getDate() + i)
       projection.push({ date: getLocalISODateFromDate(d), budget: Math.round(futureBudgetRaw * 100) / 100 })
     }
-    return { todayBudget: Math.round(Math.max(0, baseline - todaySpend) * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection }
+    const tomorrowBudget = projection.length > 1 ? projection[1].budget : Math.round(futureBudgetRaw * 100) / 100
+    return { todayBudget: Math.round((baseline - todaySpend) * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection, tomorrowBudget }
   }
 
   // equal spend
@@ -206,5 +218,7 @@ export function computeSmartDailyProjection(
     projection.push({ date: getLocalISODateFromDate(d), budget: Math.round(baseline * 100) / 100 })
   }
 
-  return { todayBudget: Math.round(baseline * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection }
+  const tomorrowBudget = projection.length > 1 ? projection[1].budget : 0
+
+  return { todayBudget: Math.round(baseline * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection, tomorrowBudget }
 }

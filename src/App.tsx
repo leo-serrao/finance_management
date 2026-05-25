@@ -8,6 +8,7 @@ import FixedExpenses from './pages/FixedExpenses'
 import VariableExpenses from './pages/VariableExpenses'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Boxes from './pages/Boxes'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Header from './components/Header'
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
             <Route path="/fixed" element={<ProtectedRoute><FixedExpenses /></ProtectedRoute>} />
             <Route path="/variable" element={<ProtectedRoute><VariableExpenses /></ProtectedRoute>} />
+            <Route path="/boxes" element={<ProtectedRoute><Boxes /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           </Routes>

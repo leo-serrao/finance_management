@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import { addVariableExpenseToUser } from '../services/expenses'
 import CurrencyInput from '../components/CurrencyInput'
 import Modal from '../components/Modal'
@@ -11,10 +12,11 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { getLocalISODate, getLocalISODateFromDate } from '../utils/date'
 
 export default function Home() {
-  const { profile, fixedExpenses, variableExpenses, addVariableExpense } = useFinanceStore()
+  const { profile, fixedExpenses, variableExpenses, addVariableExpense, savingBoxes } = useFinanceStore()
+  const navigate = useNavigate()
   const { user } = useAuth()
 
-  console.log(variableExpenses)
+  // debug logs removed
 
   const netSalary = profile?.netSalary ?? 0
   const payDay = profile?.payDay ?? 1
@@ -22,6 +24,7 @@ export default function Home() {
   const savingsPercent = profile?.savingsPercent ?? 0.2
   const allocations = useMemo(() => calculate50_30_20(netSalary, fixedExpenses, savingsPercent), [netSalary, fixedExpenses, savingsPercent])
   const proj = useMemo(() => computeSmartDailyProjection(netSalary, fixedExpenses, variableExpenses, payDay, savingsPercent), [netSalary, fixedExpenses, variableExpenses, payDay, savingsPercent])
+  const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
   // prepare chart data: sum variable expenses per day for last 14 days
   const chartData = useMemo(() => {
@@ -35,9 +38,9 @@ export default function Home() {
       map.set(key, 0)
     }
     variableExpenses.forEach(v => {
-      const d = v.date.split('T')[0]
-      if (map.has(d)) {
-        map.set(d, (map.get(d) || 0) + v.amount)
+      const key = v.date.split('T')[0]
+      if (map.has(key)) {
+        map.set(key, (map.get(key) || 0) + v.amount)
       }
     })
     return Array.from(map.entries()).map(([date, amount]) => {
@@ -74,7 +77,7 @@ export default function Home() {
   const [newAmount, setNewAmount] = useState<number>(0)
   const [newDate, setNewDate] = useState<string>(todayISO)
   const [newCategory, setNewCategory] = useState('outros')
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; variant?: 'success'|'error'|'warning'|'info' } | null>(null)
 
   async function handleQuickAdd(e?: React.FormEvent) {
     e?.preventDefault()
@@ -82,10 +85,10 @@ export default function Home() {
     addVariableExpense(item as any)
     try {
       if (user) await addVariableExpenseToUser(user.uid, item)
-      setToast('Gasto adicionado')
+      setToast({ message: 'Gasto adicionado', variant: 'success' })
     } catch (err) {
       console.error(err)
-      setToast('Erro ao salvar gasto')
+      setToast({ message: 'Erro ao salvar gasto', variant: 'error' })
     }
     setNewTitle('')
     setNewAmount(0)
@@ -104,13 +107,30 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col items-start">
           <div className="text-sm text-gray-500">Saldo recomendado para guardar</div>
           <div className="text-2xl font-semibold">R$ {allocations.savings.toFixed(2)}</div>
+          {savingBoxes && savingBoxes.length > 0 && (
+            <button
+              onClick={() => navigate('/boxes')}
+              aria-label="Ver caixinhas"
+              className="mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors flex items-center gap-2 cursor-pointer group hover:underline hover:underline-offset-2"
+              style={{ textDecorationSkipInk: 'auto' }}
+            >
+              <span className="text-left">R$ {savingBoxes.reduce((s, b) => s + b.amount, 0).toFixed(2)} distribuídos em caixinhas</span>
+              <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M7.21 4.21a.75.75 0 011.06 0l4.5 4.5a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 11-1.06-1.06L10.44 10 7.21 6.27a.75.75 0 010-1.06z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
           <div className="text-sm text-gray-500">Gasto diário disponível</div>
-          <div className="text-2xl font-semibold">R$ {proj.todayBudget.toFixed(2)}</div>
+          <div className={`text-2xl font-semibold ${proj.todayBudget < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{currency.format(proj.todayBudget)}</div>
+          <div className={`text-sm mt-2 ${proj.tomorrowBudget > proj.todayBudget ? 'text-emerald-600 dark:text-emerald-400' : proj.tomorrowBudget < proj.todayBudget ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-300'}`}>
+            Amanhã: {currency.format(proj.tomorrowBudget)}
+            <span className="ml-2 text-xs">{proj.tomorrowBudget > proj.todayBudget ? '↑ você gastou menos hoje' : proj.tomorrowBudget < proj.todayBudget ? '↓ hoje você extrapolou o orçamento' : 'mesmo que hoje'}</span>
+          </div>
         </div>
         <div className={"p-4 bg-white dark:bg-gray-800 rounded-lg shadow " + (highlight ? 'today-highlight' : '')}>
           <div className="text-sm text-gray-500">Gasto feito hoje</div>
@@ -150,7 +170,7 @@ export default function Home() {
           <div className="text-sm text-gray-500">Gastos fixos: R$ {allocations.totalFixed.toFixed(2)}</div>
           <div className="text-sm text-gray-500">Disponível para variáveis: R$ {allocations.availableForVariables.toFixed(2)}</div>
           <div className="text-sm text-gray-500">Gastos variáveis totais: R$ {proj.totalVariableSpent.toFixed(2)}</div>
-          <div className="mt-3 text-lg font-semibold">Total restante: R$ {proj.totalRemaining.toFixed(2)}</div>
+          <div className={`mt-3 text-lg font-semibold ${proj.totalRemaining < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>Total restante: {currency.format(proj.totalRemaining)}</div>
         </div>
 
         <div className="md:col-span-2 p-4 bg-white dark:bg-gray-800 rounded shadow order-2 md:order-1">

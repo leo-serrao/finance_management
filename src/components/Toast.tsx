@@ -1,27 +1,39 @@
 import React, { useEffect } from 'react'
 
-type ToastProps = {
-  message?: string
-  onClose?: () => void
+type ToastPayload = {
+  message: string
+  variant?: 'success' | 'error' | 'warning' | 'info'
   actionLabel?: string
   onAction?: () => void
 }
 
-export default function Toast({ message, onClose, actionLabel, onAction }: ToastProps) {
+type ToastProps = {
+  // can accept either a string or a payload object
+  message?: string | ToastPayload | null
+  onClose?: () => void
+}
+
+export default function Toast({ message, onClose }: ToastProps) {
   useEffect(() => {
     if (!message) return
-    const t = setTimeout(() => onClose && onClose(), 5000)
+    const t = setTimeout(() => onClose && onClose(), 3000)
     return () => clearTimeout(t)
   }, [message, onClose])
 
   if (!message) return null
 
+  const payload: ToastPayload = typeof message === 'string' ? { message, variant: 'info' } : message
+
+  const bg = payload.variant === 'success' ? 'bg-emerald-500 text-white' : payload.variant === 'error' ? 'bg-red-500 text-white' : payload.variant === 'warning' ? 'bg-yellow-500 text-black' : 'bg-gray-800 text-white'
+  const icon = payload.variant === 'success' ? '✓' : payload.variant === 'error' ? '✕' : payload.variant === 'warning' ? '⚠' : 'ℹ'
+
   return (
-    <div aria-live="polite" className="fixed bottom-6 right-6 z-50">
-      <div className="bg-black/80 text-white px-4 py-2 rounded shadow-lg animate-slide-up flex items-center gap-3">
-        <div className="flex-1">{message}</div>
-        {actionLabel && onAction && (
-          <button onClick={onAction} className="bg-white text-black px-2 py-1 rounded">{actionLabel}</button>
+    <div aria-live="polite" className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-md">
+      <div className={`${bg} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-opacity duration-300`}>
+        <div className="text-lg font-bold">{icon}</div>
+        <div className="flex-1 text-sm">{payload.message}</div>
+        {payload.actionLabel && payload.onAction && (
+          <button onClick={payload.onAction} className="ml-2 px-3 py-1 rounded bg-white/90 text-black">{payload.actionLabel}</button>
         )}
       </div>
     </div>

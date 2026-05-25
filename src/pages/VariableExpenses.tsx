@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
+import { getLocalISODateFromDate, getLocalISODate } from '../utils/date'
 import { useFinanceStore } from '../store/useFinanceStore'
 import { useAuth } from '../contexts/AuthContext'
 import { addVariableExpenseToUser, deleteVariableExpenseFromUser, updateVariableExpenseInUser } from '../services/expenses'
 import Toast from '../components/Toast'
 import CurrencyInput from '../components/CurrencyInput'
 import Modal from '../components/Modal'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function VariableExpenses() {
   const { variableExpenses, addVariableExpense } = useFinanceStore()
@@ -12,57 +14,60 @@ export default function VariableExpenses() {
 
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState<number>(0)
-  const todayISO = new Date().toISOString().slice(0,10)
+  const todayISO = getLocalISODate()
   const [date, setDate] = useState<string>(todayISO)
   const [category, setCategory] = useState('outros')
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; variant?: 'success'|'error'|'warning'|'info' } | null>(null)
   const [editing, setEditing] = useState<any | null>(null)
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || amount <= 0) {
-      setToast('Preencha título e valor maior que 0')
+      setToast({ message: 'Preencha título e valor maior que 0', variant: 'warning' })
       return
     }
-    const item = { id: Date.now().toString(), title: title.trim(), amount, category, date: new Date(date).toISOString() }
+    const item = { id: Date.now().toString(), title: title.trim(), amount, category, date: getLocalISODateFromDate(new Date(date)) }
     addVariableExpense(item as any)
     try {
       if (user) await addVariableExpenseToUser(user.uid, item)
-      setToast('Gasto adicionado')
+      setToast({ message: 'Gasto adicionado', variant: 'success' })
     } catch (err) {
-      setToast('Erro ao salvar gasto')
+      setToast({ message: 'Erro ao salvar gasto', variant: 'error' })
     }
     setTitle('')
     setAmount(0)
     setDate(todayISO)
   }
 
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; title?: string } | null>(null)
+
   async function handleDelete(id: string) {
     if (!user) return
-    if (!window.confirm('Confirma excluir este gasto variável?')) return
     try {
       await deleteVariableExpenseFromUser(user.uid, id)
-      setToast('Gasto excluído')
+      setToast({ message: 'Gasto excluído', variant: 'success' })
     } catch (err) {
       console.error(err)
-      setToast('Erro ao excluir')
+      setToast({ message: 'Erro ao excluir', variant: 'error' })
+    } finally {
+      setConfirmDelete(null)
     }
   }
 
   function openEdit(item: any) {
-    setEditing({ ...item, date: item.date ? new Date(item.date).toISOString().slice(0,10) : todayISO })
+    setEditing({ ...item, date: item.date ? getLocalISODateFromDate(new Date(item.date)) : todayISO })
   }
 
   async function saveEdit() {
     if (!user || !editing) return
     try {
-      const upd = { title: editing.title, amount: editing.amount, category: editing.category, date: new Date(editing.date).toISOString() }
+      const upd = { title: editing.title, amount: editing.amount, category: editing.category, date: getLocalISODateFromDate(new Date(editing.date)) }
       await updateVariableExpenseInUser(user.uid, editing.id, upd)
       setEditing(null)
-      setToast('Gasto atualizado')
+      setToast({ message: 'Gasto atualizado', variant: 'success' })
     } catch (err) {
       console.error(err)
-      setToast('Erro ao atualizar')
+      setToast({ message: 'Erro ao atualizar', variant: 'error' })
     }
   }
 
@@ -97,7 +102,7 @@ export default function VariableExpenses() {
             <div className="flex items-center gap-3">
               <div className="font-semibold">R$ {v.amount.toFixed(2)}</div>
               <button onClick={() => openEdit(v)} className="text-xl md:text-sm text-teal-600 p-2">✎</button>
-              <button onClick={() => handleDelete(v.id)} className="text-base md:text-sm text-red-500 p-1">🗑</button>
+              <button onClick={() => setConfirmDelete({ id: v.id, title: v.title })} className="text-base md:text-sm text-red-500 p-1">🗑</button>
             </div>
           </li>
         ))}
@@ -115,6 +120,13 @@ export default function VariableExpenses() {
           </form>
         </Modal>
       )}
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Excluir gasto"
+        message="Tem certeza que deseja excluir este gasto? Essa ação não poderá ser desfeita."
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete.id)}
+      />
       <Toast message={toast ?? undefined} onClose={() => setToast(null)} />
     </div>
   )

@@ -23,6 +23,7 @@ export default function Header() {
         <nav className="hidden md:flex space-x-4 items-center">
           <Link to="/">Dashboard</Link>
           <Link to="/fixed">Fixos</Link>
+          <Link to="/boxes">Caixinhas</Link>
           <Link to="/variable">Variáveis</Link>
           <Link to="/reports">Relatórios</Link>
           <button onClick={toggle} aria-label="Toggle theme" className="px-2 py-1 rounded border">
@@ -92,6 +93,14 @@ export default function Header() {
               className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
             >
               Fixos
+            </Link>
+
+            <Link
+              to="/boxes"
+              onClick={() => setOpen(false)}
+              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            >
+              Caixinhas
             </Link>
 
             <Link

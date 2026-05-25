@@ -6,6 +6,7 @@ import { deleteFixedExpenseFromUser, updateFixedExpenseInUser } from '../service
 import Toast from '../components/Toast'
 import CurrencyInput from '../components/CurrencyInput'
 import Modal from '../components/Modal'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function FixedExpenses() {
   const { fixedExpenses, addFixedExpense } = useFinanceStore()
@@ -13,19 +14,20 @@ export default function FixedExpenses() {
 
   const [name, setName] = useState('')
   const [amount, setAmount] = useState<number>(0)
-  const [toast, setToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null)
+  const [toast, setToast] = useState<{ message: string; variant?: 'success'|'error'|'warning'|'info'; actionLabel?: string; onAction?: () => void } | null>(null)
   const [editing, setEditing] = useState<any | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name?: string } | null>(null)
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || amount <= 0) {
-      setToast({ message: 'Preencha nome e valor maior que 0' })
+      setToast({ message: 'Preencha nome e valor maior que 0', variant: 'warning' })
       return
     }
     const item = { id: Date.now().toString(), name: name.trim(), amount }
     addFixedExpense(item as any)
     if (user) await addFixedExpenseToUser(user.uid, item)
-    setToast({ message: 'Gasto adicionado' })
+    setToast({ message: 'Gasto adicionado', variant: 'success' })
     setName('')
     setAmount(0)
   }
@@ -49,24 +51,31 @@ export default function FixedExpenses() {
             <div className="flex items-center gap-3">
               <div className="font-semibold">R$ {f.amount.toFixed(2)}</div>
               <button onClick={() => setEditing(f)} className="text-xl md:text-sm text-teal-600 p-2">✎</button>
-              <button onClick={async () => {
-                if (!user) return
-                if (!window.confirm('Confirma excluir este gasto fixo?')) return
-                try { await deleteFixedExpenseFromUser(user.uid, f.id); setToast({ message: 'Gasto excluído' }) } catch (err) { console.error(err); setToast({ message: 'Erro ao excluir' }) }
-              }} className="text-base md:text-sm text-red-500 p-1">🗑</button>
+              <button onClick={() => setConfirmDelete({ id: f.id, name: f.name })} className="text-base md:text-sm text-red-500 p-1">🗑</button>
             </div>
           </li>
         ))}
       </ul>
 
-      {toast && <Toast message={toast.message} onClose={() => setToast(null)} actionLabel={toast.actionLabel} onAction={toast.onAction} />}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
+      <ConfirmModal
+        open={!!(confirmDelete)}
+        title="Excluir gasto"
+        message="Tem certeza que deseja excluir este gasto? Essa ação não poderá ser desfeita."
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={async () => {
+          if (!user || !confirmDelete) return
+          try { await deleteFixedExpenseFromUser(user.uid, confirmDelete.id); setToast({ message: 'Gasto excluído', variant: 'success' }) } catch (err) { console.error(err); setToast({ message: 'Erro ao excluir', variant: 'error' }) } finally { setConfirmDelete(null) }
+        }}
+      />
 
       {editing && (
         <Modal title="Editar gasto fixo" onClose={() => setEditing(null)}>
-          <EditFixedForm
+            <EditFixedForm
             item={editing}
             onCancel={() => setEditing(null)}
-            onSaved={() => { setEditing(null); setToast({ message: 'Gasto atualizado' }) }}
+            onSaved={() => { setEditing(null); setToast({ message: 'Gasto atualizado', variant: 'success' }) }}
           />
         </Modal>
       )}

@@ -26,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let unsubFixed: (() => void) | null = null
     let unsubVariable: (() => void) | null = null
+    let unsubBoxes: (() => void) | null = null
 
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u)
@@ -36,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // real-time listeners for expenses
         const fixedCol = collection(db, 'users', u.uid, 'fixedExpenses')
         const variableCol = collection(db, 'users', u.uid, 'variableExpenses')
+        const boxesCol = collection(db, 'users', u.uid, 'savingBoxes')
 
         unsubFixed = onSnapshot(fixedCol, (snap) => {
           const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
@@ -46,10 +48,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
           setVariableExpenses(items as any)
         })
+
+        unsubBoxes = onSnapshot(boxesCol, (snap) => {
+          const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
+          // set into store
+          ;(useFinanceStore.getState().setSavingBoxes as any)(items)
+        }, (err) => {
+          // handle permission or other listener errors gracefully
+          console.error('SavingBoxes listener error', err)
+          // clear boxes to avoid stale data when permissions change
+          ;(useFinanceStore.getState().setSavingBoxes as any)([])
+        })
       } else {
         setProfile(null as any)
         if (unsubFixed) unsubFixed()
         if (unsubVariable) unsubVariable()
+        if (unsubBoxes) unsubBoxes()
       }
       setLoading(false)
     })
@@ -58,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsub()
       if (unsubFixed) unsubFixed()
       if (unsubVariable) unsubVariable()
+      if (unsubBoxes) unsubBoxes()
     }
   }, [])
 

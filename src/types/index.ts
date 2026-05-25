@@ -22,3 +22,11 @@ export type Profile = {
   fixedExpenses?: FixedExpense[]
   savingsPercent?: number
 }
+
+export type SavingBox = {
+  id: string
+  name: string
+  amount: number
+  createdAt: string // ISO
+  emoji?: string
+}
