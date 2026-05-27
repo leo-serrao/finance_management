@@ -12,7 +12,7 @@ export default function SharedGroups() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [toast, setToast] = useState<{ message: string; variant?: string } | null>(null)
+  const [toast, setToast] = useState<{ message: string; variant?: 'success' | 'error' | 'warning' | 'info' } | null>(null)
   
   useEffect(() => {
     if (!user) return

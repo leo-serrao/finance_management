@@ -172,7 +172,7 @@ export default function Home() {
             </button>
           )}
         </div>
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div onClick={() => navigate('/shared')} className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
           <div className="text-sm text-gray-500">Gastos compartilhados (mês)</div>
           <div className="text-2xl font-semibold">{currency.format(sharedSummary.total)}</div>
           <div className="text-sm text-gray-500 mt-2">Você deve: {currency.format(sharedSummary.youOwe)}</div>

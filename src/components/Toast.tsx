@@ -28,8 +28,14 @@ export default function Toast({ message, onClose }: ToastProps) {
   const icon = payload.variant === 'success' ? '✓' : payload.variant === 'error' ? '✕' : payload.variant === 'warning' ? '⚠' : 'ℹ'
 
   return (
-    <div aria-live="polite" className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-md">
-      <div className={`${bg} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-opacity duration-300`}>
+    <div
+      aria-live="polite"
+      className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-md pointer-events-none"
+    >
+      <div
+        onClick={() => onClose && onClose()}
+        className={`${bg} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-opacity duration-300 cursor-pointer pointer-events-auto`}
+      >
         <div className="text-lg font-bold">{icon}</div>
         <div className="flex-1 text-sm">{payload.message}</div>
         {payload.actionLabel && payload.onAction && (
