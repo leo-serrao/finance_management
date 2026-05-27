@@ -15,3 +15,11 @@ export function getLocalISODateFromDate(date: Date) {
 
   return `${year}-${month}-${day}`
 }
+
+export function formatBRDate(date: string) {
+  if (!date) return ''
+
+  const [year, month, day] = date.split('-')
+
+  return `${day}/${month}/${year}`
+}

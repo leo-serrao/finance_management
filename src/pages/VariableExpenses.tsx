@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { getLocalISODateFromDate, getLocalISODate } from '../utils/date'
+import { getLocalISODate, formatBRDate } from '../utils/date'
 import { useFinanceStore } from '../store/useFinanceStore'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -29,7 +29,7 @@ export default function VariableExpenses() {
       setToast({ message: 'Preencha título e valor maior que 0', variant: 'warning' })
       return
     }
-    const item = { id: Date.now().toString(), title: title.trim(), amount, category, date: getLocalISODateFromDate(new Date(date)) }
+    const item = { id: Date.now().toString(), title: title.trim(), amount, category, date }
     addVariableExpense(item as any)
     try {
       if (user) await addVariableExpenseToUser(user.uid, item)
@@ -78,13 +78,16 @@ export default function VariableExpenses() {
   }
 
   function openEdit(item: any) {
-    setEditing({ ...item, date: item.date ? getLocalISODateFromDate(new Date(item.date)) : todayISO })
+    setEditing({
+      ...item,
+      date: item.date || todayISO
+    })
   }
 
   async function saveEdit() {
     if (!user || !editing) return
     try {
-      const upd = { title: editing.title, amount: editing.amount, category: editing.category, date: getLocalISODateFromDate(new Date(editing.date)) }
+      const upd = { title: editing.title, amount: editing.amount, category: editing.category, date: editing.date }
       await updateVariableExpenseInUser(user.uid, editing.id, upd)
       setEditing(null)
       setToast({ message: 'Gasto atualizado', variant: 'success' })
@@ -124,7 +127,7 @@ export default function VariableExpenses() {
               <div className="min-w-0">
                 <div className="min-w-0 flex items-center gap-2">
                   <div className="font-medium truncate">{title}</div>
-                  <div className="text-sm text-gray-500">{new Date(a.date).toLocaleDateString()}</div>
+                  <div className="text-sm text-gray-500">{formatBRDate(a.date)}</div>
                 </div>
                 <div className="text-sm text-gray-500">{subtitle}</div>
               </div>
@@ -140,7 +143,7 @@ export default function VariableExpenses() {
             <div className="min-w-0">
               <div className="min-w-0 flex items-center gap-2">
                   <div className="font-medium truncate">{v.title}</div>
-                  <div className="text-sm text-gray-500">{new Date(v.date).toLocaleDateString()}</div>
+                  <div className="text-sm text-gray-500">{formatBRDate(v.date)}</div>
               </div>
               <div className="text-sm text-gray-500">{v.category.charAt(0).toUpperCase() + v.category.slice(1)}</div>
             </div>

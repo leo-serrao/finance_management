@@ -70,7 +70,8 @@ export default function Home() {
       const key = getLocalISODateFromDate(d)
       map.set(key, 0)
     }
-    variableExpenses.forEach(v => {
+    // include shared adjustments in the chart (use mergedVariableExpenses)
+    mergedVariableExpenses.forEach(v => {
       const key = v.date.split('T')[0]
       if (map.has(key)) {
         map.set(key, (map.get(key) || 0) + v.amount)
@@ -90,7 +91,7 @@ export default function Home() {
   const [highlight, setHighlight] = useState(false)
   const prevTodaySpent = useRef(0)
   const todayKey = getLocalISODate()
-  const todaySpent = variableExpenses
+  const todaySpent = mergedVariableExpenses
     .filter(v => v.date.split('T')[0] === todayKey)
     .reduce((s, v) => s + v.amount, 0)
 
