@@ -54,12 +54,12 @@ export default function Header() {
               $
             </div>
 
-            <div className="hidden sm:block">
-              <div className="font-semibold leading-tight">
+            <div>
+              <div className="font-semibold leading-tight text-sm sm:text-base">
                 Finance Manager
               </div>
 
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="hidden sm:block text-xs text-gray-500 dark:text-gray-400">
                 Controle financeiro
               </div>
             </div>
