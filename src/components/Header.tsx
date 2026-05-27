@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useFinanceStore } from '../store/useFinanceStore'
 import { useTheme } from '../contexts/ThemeContext'
 
 export default function Header() {
   const { user, logout } = useAuth()
+  const { profile } = useFinanceStore()
   const navigate = useNavigate()
   const { theme, toggle } = useTheme()
   const [open, setOpen] = useState(false)
@@ -24,6 +26,7 @@ export default function Header() {
           <Link to="/">Dashboard</Link>
           <Link to="/fixed">Fixos</Link>
           <Link to="/boxes">Caixinhas</Link>
+          <Link to="/shared">Compartilhados</Link>
           <Link to="/variable">Variáveis</Link>
           <Link to="/reports">Relatórios</Link>
           <button onClick={toggle} aria-label="Toggle theme" className="px-2 py-1 rounded border">
@@ -33,7 +36,7 @@ export default function Header() {
             <Link to="/login">Login</Link>
           ) : (
             <>
-              <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">{profile?.displayName ?? user.email}</span>
               <Link to="/settings" className="ml-2 text-sm text-gray-600 dark:text-gray-300">Configurações</Link>
               <button onClick={handleLogout} className="ml-2 bg-red-500 text-white px-3 py-1 rounded">Sair</button>
             </>
@@ -104,6 +107,14 @@ export default function Header() {
             </Link>
 
             <Link
+              to="/shared"
+              onClick={() => setOpen(false)}
+              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            >
+              Compartilhados
+            </Link>
+
+            <Link
               to="/variable"
               onClick={() => setOpen(false)}
               className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -140,7 +151,7 @@ export default function Header() {
                   </Link>
 
                   <div className="px-2 pt-3 text-sm text-gray-500 break-all">
-                    {user.email}
+                    {profile?.displayName ?? user.email}
                   </div>
 
                   <button

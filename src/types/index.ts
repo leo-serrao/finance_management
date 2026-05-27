@@ -17,6 +17,7 @@ export type VariableExpense = {
 export type Profile = {
   uid?: string
   email?: string
+  displayName?: string
   netSalary?: number
   payDay?: number
   fixedExpenses?: FixedExpense[]

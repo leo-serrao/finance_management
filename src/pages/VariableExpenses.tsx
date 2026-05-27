@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { getLocalISODateFromDate, getLocalISODate } from '../utils/date'
 import { useFinanceStore } from '../store/useFinanceStore'
 import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import { subscribeToUserSharedAdjustments } from '../services/sharedUserAdjustments'
+import { subscribeToSharedGroups } from '../services/sharedGroups'
 import { addVariableExpenseToUser, deleteVariableExpenseFromUser, updateVariableExpenseInUser } from '../services/expenses'
 import Toast from '../components/Toast'
 import CurrencyInput from '../components/CurrencyInput'
@@ -40,6 +43,26 @@ export default function VariableExpenses() {
   }
 
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title?: string } | null>(null)
+
+  const [sharedAdjustments, setSharedAdjustments] = useState<any[]>([])
+  const [groupsMap, setGroupsMap] = useState<Record<string, any>>({})
+  const navigate = useNavigate()
+
+  // subscribe to user's shared groups and adjustments to show derived cards
+  useEffect(() => {
+    if (!user) return
+    const unsubGroups = subscribeToSharedGroups(user.uid, (groups) => {
+      const m: Record<string, any> = {}
+      groups.forEach((g: any) => { m[g.id] = g })
+      setGroupsMap(m)
+    }, (err) => console.error('shared groups error', err))
+
+    const unsubAdj = subscribeToUserSharedAdjustments(user.uid, (adj) => {
+      setSharedAdjustments(adj)
+    }, (err) => console.error('shared adjustments error', err))
+
+    return () => { unsubGroups && unsubGroups(); unsubAdj && unsubAdj() }
+  }, [user])
 
   async function handleDelete(id: string) {
     if (!user) return
@@ -90,6 +113,28 @@ export default function VariableExpenses() {
       </form>
 
       <ul className="space-y-2">
+        {/* derived shared expense cards (read-only) */}
+        {sharedAdjustments.map(a => {
+          const gid = a.groupId
+          const group = gid ? groupsMap[gid] : null
+          const title = group ? `🤝 ${group.name}` : '🤝 Compartilhado'
+          const subtitle = a.isPayer ? 'Devem para você' : 'Sua parte'
+          return (
+            <li key={a.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded shadow flex justify-between items-center opacity-95 border border-dashed">
+              <div className="min-w-0">
+                <div className="min-w-0 flex items-center gap-2">
+                  <div className="font-medium truncate">{title}</div>
+                  <div className="text-sm text-gray-500">{new Date(a.date).toLocaleDateString()}</div>
+                </div>
+                <div className="text-sm text-gray-500">{subtitle}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="font-semibold">R$ {a.amount.toFixed(2)}</div>
+                <button onClick={() => { if (gid) navigate(`/shared/${gid}`) }} className="text-sm text-teal-600 p-2">Abrir</button>
+              </div>
+            </li>
+          )
+        })}
         {variableExpenses.map(v => (
           <li key={v.id} className="p-3 bg-white dark:bg-gray-800 rounded shadow flex justify-between items-center">
             <div className="min-w-0">

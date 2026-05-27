@@ -14,6 +14,7 @@ export default function Settings() {
   const [netSalary, setNetSalary] = useState<number>(profile?.netSalary ?? 0)
   const [payDay, setPayDay] = useState<number>(profile?.payDay ?? 1)
   const [savingsPct, setSavingsPct] = useState<number>((profile?.savingsPercent ?? 0.2) * 100)
+  const [displayName, setDisplayName] = useState<string>(profile?.displayName ?? '')
   const [name, setName] = useState('')
   const [amount, setAmount] = useState<number>(0)
   const [addError, setAddError] = useState<string | null>(null)
@@ -24,11 +25,11 @@ export default function Settings() {
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
     if (!user) return
-    const data = { netSalary, payDay, savingsPercent: (savingsPct ?? 20) / 100 }
+    const data = { netSalary, payDay, savingsPercent: (savingsPct ?? 20) / 100, displayName: displayName || undefined }
     try {
       await setUserProfile(user.uid, data)
       // update local store immediately so UI reflects changes without reload
-      setProfile({ uid: user.uid, email: user.email ?? undefined, ...data } as any)
+      setProfile({ uid: user.uid, email: user.email ?? undefined, displayName: data.displayName ?? profile?.displayName, ...data } as any)
       setToast({ message: 'Perfil salvo', variant: 'success' })
     } catch (err) {
       console.error('Failed to save profile', err)
@@ -87,6 +88,10 @@ export default function Settings() {
       <h2 className="text-2xl font-bold mb-4">Configurações / Perfil</h2>
 
       <form onSubmit={handleSaveProfile} className="max-w-md bg-white dark:bg-gray-800 p-4 rounded shadow mb-6">
+        <label className="block mb-2">
+          <div className="text-sm">Nome exibido</div>
+          <input value={displayName} onChange={e=>setDisplayName(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
+        </label>
         <label className="block mb-2">
           <div className="text-sm">Salário líquido mensal</div>
           <CurrencyInput value={netSalary} onChange={setNetSalary} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />

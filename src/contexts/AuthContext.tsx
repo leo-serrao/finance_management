@@ -31,8 +31,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u)
       if (u) {
-        const profile = await getUserProfile(u.uid)
-        if (profile) setProfile({ uid: u.uid, email: u.email ?? undefined, ...(profile as any) })
+        // Ensure Firestore /users/{uid} exists and has email + createdAt (merge: true)
+        try {
+          const profile = await getUserProfile(u.uid) || {}
+          const createdAt = (profile as any).createdAt ?? new Date().toISOString()
+          const update: any = { createdAt }
+          if (u.email) update.email = u.email
+          // only set displayName from auth if not present in profile (don't overwrite user-chosen name)
+          if (!(profile as any).displayName && u.displayName) update.displayName = u.displayName
+          await setUserProfile(u.uid, update)
+
+          // Merge profile for local state without overwriting user-specific settings
+          const merged = {
+            uid: u.uid,
+            email: u.email ?? (profile as any).email ?? undefined,
+            displayName: (profile as any).displayName ?? u.displayName ?? (u.email ?? (profile as any).email ?? undefined),
+            ...(profile as any),
+            createdAt
+          }
+          setProfile(merged as any)
+        } catch (err) {
+          console.error('Failed to sync user profile to Firestore', err)
+        }
 
         // real-time listeners for expenses
         const fixedCol = collection(db, 'users', u.uid, 'fixedExpenses')

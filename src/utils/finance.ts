@@ -111,7 +111,8 @@ export function computeDailyProjection(
   // strictly less than nextPay. For spentSoFar we consider dates up to yesterday
   // (exclude today) so compare v.date > prevPayKey && v.date < todayKey
   const spentSoFar = variableExpenses
-    .filter(v => v.date > prevPayKey && v.date < todayKey)
+    .map(v => ({ ...v, _day: v.date.split('T')[0] }))
+    .filter(v => v._day > prevPayKey && v._day < todayKey)
     .reduce((s, v) => s + v.amount, 0)
 
   const totalAvailable = allocations2.availableForVariables
@@ -155,70 +156,49 @@ export function computeSmartDailyProjection(
   const todayKey = getLocalISODateFromDate(today)
 
   variableExpenses.forEach(v => {
-    if (v.date > prevPayKey && v.date < nextPayKey) {
-      spentByDay.set(v.date, (spentByDay.get(v.date) || 0) + v.amount)
+    const day = v.date.split('T')[0]
+    if (day > prevPayKey && day < nextPayKey) {
+      spentByDay.set(day, (spentByDay.get(day) || 0) + v.amount)
     }
   })
+  // Sum spent before today (exclusive) and up to today (inclusive)
+  const spentBeforeToday = Array.from(spentByDay.entries())
+    .filter(([date]) => date < todayKey)
+    .reduce((s, [, amt]) => s + amt, 0)
 
-  const spentSoFar = Array.from(spentByDay.entries())
+  const spentUpToToday = Array.from(spentByDay.entries())
     .filter(([date]) => date <= todayKey)
     .reduce((s, [, amt]) => s + amt, 0)
 
   const totalAvailable = allocations.availableForVariables
-  const totalRemaining = totalAvailable - spentSoFar
+  const totalRemaining = totalAvailable - spentUpToToday
 
   const daysRemaining = daysLeft
-  const baseline = daysRemaining > 0 ? totalRemaining / daysRemaining : 0
-
-  const projection: DailyProjection[] = []
-
-  // today's spend
-  const todaySpend = spentByDay.get(todayKey) || 0
-
-  const futureDays = Math.max(0, daysRemaining - 1)
-
   if (daysRemaining === 0) {
     return { todayBudget: 0, daysRemaining: 0, totalRemaining: 0, totalVariableSpent: 0, projection: [], tomorrowBudget: 0 }
   }
 
-  // Calculate today's budget considering today's spend (can be negative)
-  let todayBudget = baseline - todaySpend
+  const projection: DailyProjection[] = []
 
-  // If today underspent, redistribute surplus to future days; if overspent, reduce future budgets
-  if (todaySpend < baseline) {
-    const surplus = baseline - todaySpend
-    const futureBudget = futureDays > 0 ? baseline + surplus / futureDays : 0
-    projection.push({ date: todayKey, budget: Math.round(todayBudget * 100) / 100 })
-    for (let i = 1; i < daysRemaining; i++) {
-      const d = new Date(today)
-      d.setDate(d.getDate() + i)
-      projection.push({ date: getLocalISODateFromDate(d), budget: Math.round(futureBudget * 100) / 100 })
-    }
-    const tomorrowBudget = projection.length > 1 ? projection[1].budget : Math.round(futureBudget * 100) / 100
-    return { todayBudget: Math.round(todayBudget * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection, tomorrowBudget }
-  }
+  // We'll distribute the remaining available amount sequentially across the remaining days.
+  // Start with available at beginning of today (exclude today's spend)
+  let remainingAvailable = totalAvailable - spentBeforeToday
 
-  if (todaySpend > baseline) {
-    const deficit = todaySpend - baseline
-    const futureBudgetRaw = futureDays > 0 ? baseline - deficit / futureDays : 0
-    projection.push({ date: todayKey, budget: Math.round((baseline - todaySpend) * 100) / 100 })
-    for (let i = 1; i < daysRemaining; i++) {
-      const d = new Date(today)
-      d.setDate(d.getDate() + i)
-      projection.push({ date: getLocalISODateFromDate(d), budget: Math.round(futureBudgetRaw * 100) / 100 })
-    }
-    const tomorrowBudget = projection.length > 1 ? projection[1].budget : Math.round(futureBudgetRaw * 100) / 100
-    return { todayBudget: Math.round((baseline - todaySpend) * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection, tomorrowBudget }
-  }
-
-  // equal spend
   for (let i = 0; i < daysRemaining; i++) {
     const d = new Date(today)
     d.setDate(d.getDate() + i)
-    projection.push({ date: getLocalISODateFromDate(d), budget: Math.round(baseline * 100) / 100 })
+    const dayKey = getLocalISODateFromDate(d)
+    const remainingDays = daysRemaining - i
+    const allocationForDay = remainingDays > 0 ? remainingAvailable / remainingDays : 0
+    const spentOnDay = spentByDay.get(dayKey) || 0
+    const budgetForDay = Math.round((allocationForDay - spentOnDay) * 100) / 100
+    projection.push({ date: dayKey, budget: budgetForDay })
+    // after accounting today's spend, reduce remainingAvailable
+    remainingAvailable = remainingAvailable - spentOnDay
   }
 
+  const todayBudget = projection[0]?.budget ?? 0
   const tomorrowBudget = projection.length > 1 ? projection[1].budget : 0
 
-  return { todayBudget: Math.round(baseline * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentSoFar * 100) / 100, projection, tomorrowBudget }
+  return { todayBudget: Math.round(todayBudget * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentUpToToday * 100) / 100, projection, tomorrowBudget }
 }

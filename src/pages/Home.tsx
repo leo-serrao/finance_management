@@ -10,6 +10,8 @@ import { format } from 'date-fns'
 import { calculate50_30_20, computeSmartDailyProjection } from '../utils/finance'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getLocalISODate, getLocalISODateFromDate } from '../utils/date'
+import { subscribeToUserSharedAdjustments } from '../services/sharedUserAdjustments'
+import { subscribeToUserDebtSettlements } from '../services/userDebtSettlements'
 
 export default function Home() {
   const { profile, fixedExpenses, variableExpenses, addVariableExpense, savingBoxes } = useFinanceStore()
@@ -23,8 +25,39 @@ export default function Home() {
 
   const savingsPercent = profile?.savingsPercent ?? 0.2
   const allocations = useMemo(() => calculate50_30_20(netSalary, fixedExpenses, savingsPercent), [netSalary, fixedExpenses, savingsPercent])
-  const proj = useMemo(() => computeSmartDailyProjection(netSalary, fixedExpenses, variableExpenses, payDay, savingsPercent), [netSalary, fixedExpenses, variableExpenses, payDay, savingsPercent])
+  const [sharedAdjustments, setSharedAdjustments] = useState<{ id: string; date: string; amount: number; groupId?: string; expenseId?: string; isPayer?: boolean }[]>([])
+  const [sharedPayments, setSharedPayments] = useState<any[]>([])
+
+  const mergedVariableExpenses = useMemo(() => {
+    const adjustmentsAsVars = (sharedAdjustments || []).map(a => ({ id: a.id, title: 'Compartilhado', amount: a.amount, category: 'shared', date: a.date }))
+    // merge arrays; do not mutate original
+    return [...variableExpenses, ...adjustmentsAsVars]
+  }, [variableExpenses, sharedAdjustments])
+
+  const proj = useMemo(() => computeSmartDailyProjection(netSalary, fixedExpenses, mergedVariableExpenses, payDay, savingsPercent), [netSalary, fixedExpenses, mergedVariableExpenses, payDay, savingsPercent])
   const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  // Shared summary for current month
+  const sharedSummary = useMemo(() => {
+    if (!sharedAdjustments || sharedAdjustments.length === 0) return { total: 0, youOwe: 0, owedToYou: 0 }
+    const today = new Date()
+    const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+    const filtered = sharedAdjustments.filter(a => a.date.startsWith(monthKey))
+    const total = filtered.reduce((s, a) => s + Math.abs(a.amount), 0)
+    const youOweGross = filtered.filter(a => !a.isPayer).reduce((s, a) => s + Math.abs(a.amount), 0)
+    const owedToYouGross = filtered.filter(a => a.isPayer).reduce((s, a) => s + Math.abs(a.amount), 0)
+    // consider payments recorded this month
+    const paymentsThisMonth = (sharedPayments || []).filter(p => p.createdAt && p.createdAt.startsWith(monthKey))
+    const paidByMe = paymentsThisMonth.filter(p => p.fromUserId === user?.uid).reduce((s, p) => s + (p.amount || 0), 0)
+    const receivedByMe = paymentsThisMonth.filter(p => p.toUserId === user?.uid).reduce((s, p) => s + (p.amount || 0), 0)
+    const youOweGrossAfterPayments = Math.max(0, youOweGross - paidByMe)
+    const owedToYouGrossAfterPayments = Math.max(0, owedToYouGross - receivedByMe)
+    // compute net amounts after payments
+    const net = Math.round((youOweGrossAfterPayments - owedToYouGrossAfterPayments) * 100) / 100
+    const youOwe = net > 0 ? net : 0
+    const owedToYou = net < 0 ? -net : 0
+    return { total: Math.round(total * 100) / 100, youOwe, owedToYou, youOweGross: Math.round(youOweGrossAfterPayments*100)/100, owedToYouGross: Math.round(owedToYouGrossAfterPayments*100)/100 }
+  }, [sharedAdjustments, sharedPayments, user])
 
   // prepare chart data: sum variable expenses per day for last 14 days
   const chartData = useMemo(() => {
@@ -69,6 +102,20 @@ export default function Home() {
     }
     prevTodaySpent.current = todaySpent
   }, [todaySpent])
+
+  useEffect(() => {
+    let unsub1: (()=>void) | null = null
+    let unsub2: (()=>void) | null = null
+    if (user) {
+      unsub1 = subscribeToUserSharedAdjustments(user.uid, (adj) => {
+        setSharedAdjustments(adj)
+      }, (err) => console.error('shared adjustments error', err))
+      unsub2 = subscribeToUserDebtSettlements(user.uid, (items) => {
+        setSharedPayments(items)
+      }, (err) => console.error('shared payments error', err))
+    }
+    return () => { if (unsub1) unsub1(); if (unsub2) unsub2() }
+  }, [user])
 
   // modal for quick add
   const [openAdd, setOpenAdd] = useState(false)
@@ -123,6 +170,12 @@ export default function Home() {
               </svg>
             </button>
           )}
+        </div>
+        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="text-sm text-gray-500">Gastos compartilhados (mês)</div>
+          <div className="text-2xl font-semibold">{currency.format(sharedSummary.total)}</div>
+          <div className="text-sm text-gray-500 mt-2">Você deve: {currency.format(sharedSummary.youOwe)}</div>
+          <div className="text-sm text-gray-500">Devem para você: {currency.format(sharedSummary.owedToYou)}</div>
         </div>
         <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
           <div className="text-sm text-gray-500">Gasto diário disponível</div>
