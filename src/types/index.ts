@@ -1,8 +1,23 @@
+export const FIXED_EXPENSE_CATEGORIES = [
+  {
+    value: 'bills',
+    label: 'Contas'
+  },
+  {
+    value: 'subscriptions',
+    label: 'Assinaturas'
+  }
+] as const
+
+export type FixedExpenseCategory =
+  | 'bills'
+  | 'subscriptions'
+
 export type FixedExpense = {
   id: string
   name: string
   amount: number
-  category?: string
+  category: FixedExpenseCategory
 }
 
 export type VariableExpense = {

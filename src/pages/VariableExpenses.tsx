@@ -10,9 +10,21 @@ import Toast from '../components/Toast'
 import CurrencyInput from '../components/CurrencyInput'
 import Modal from '../components/Modal'
 import ConfirmModal from '../components/ConfirmModal'
+import { currency } from '../utils/finance'
+
+import {
+  Pencil,
+  Trash2,
+  Users,
+  ArrowRight,
+  ChevronDown
+} from 'lucide-react'
+import SharedExpenseCard from '../components/SharedExpenseCard'
+import VariableExpenseCard from '../components/VariableExpenseCard'
 
 export default function VariableExpenses() {
-  const { variableExpenses, addVariableExpense } = useFinanceStore()
+  const { variableExpenses, addVariableExpense, sharedAdjustments  } = useFinanceStore()
+  const setSharedAdjustments = useFinanceStore.getState().setSharedAdjustments
   const { user } = useAuth()
 
   const [title, setTitle] = useState('')
@@ -44,7 +56,6 @@ export default function VariableExpenses() {
 
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title?: string } | null>(null)
 
-  const [sharedAdjustments, setSharedAdjustments] = useState<any[]>([])
   const [groupsMap, setGroupsMap] = useState<Record<string, any>>({})
   const navigate = useNavigate()
 
@@ -97,85 +108,648 @@ export default function VariableExpenses() {
     }
   }
 
-  return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Gastos Variáveis</h2>
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-2 mb-4 items-center">
-        <input placeholder="Título" value={title} onChange={e=>setTitle(e.target.value)} className="p-2 h-10 border rounded flex-1 min-w-0 bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-        <CurrencyInput value={amount} onChange={setAmount} className="p-2 h-10 border rounded w-full md:w-32 bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="p-2 h-10 border rounded w-full md:w-40 bg-white dark:bg-gray-700 text-black dark:text-gray-100 appearance-none box-border text-left leading-6 max-w-full" />
-        <select value={category} onChange={e=>setCategory(e.target.value)} className="p-2 h-10 border rounded w-full md:w-40 bg-white dark:bg-gray-700 text-black dark:text-gray-100">
-          <option value="alimentacao">Alimentação</option>
-          <option value="transporte">Transporte</option>
-          <option value="lazer">Lazer</option>
-          <option value="compras">Compras</option>
-          <option value="saude">Saúde</option>
-          <option value="outros">Outros</option>
-        </select>
-        <button className="bg-teal-500 text-white px-4 rounded h-10 flex items-center justify-center">Adicionar</button>
-      </form>
+  function getCategoryLabel(category: string) {
+  switch (category) {
+    case 'alimentacao':
+      return 'Alimentação'
+    case 'transporte':
+      return 'Transporte'
+    case 'lazer':
+      return 'Lazer'
+    case 'compras':
+      return 'Compras'
+    case 'saude':
+      return 'Saúde'
+    default:
+      return 'Outros'
+  }
+  }
 
-      <ul className="space-y-2">
-        {/* derived shared expense cards (read-only) */}
-        {sharedAdjustments.map(a => {
-          const gid = a.groupId
-          const group = gid ? groupsMap[gid] : null
-          const title = group ? `🤝 ${group.name}` : '🤝 Compartilhado'
-          const subtitle = a.isPayer ? 'Devem para você' : 'Sua parte'
-          return (
-            <li key={a.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded shadow flex justify-between items-center opacity-95 border border-dashed">
-              <div className="min-w-0">
-                <div className="min-w-0 flex items-center gap-2">
-                  <div className="font-medium truncate">{title}</div>
-                  <div className="text-sm text-gray-500">{formatBRDate(a.date)}</div>
+  function getCategoryStyles(category: string) {
+    switch (category) {
+      case 'alimentacao':
+        return 'bg-[rgba(96,136,121,0.12)] text-[var(--primary)] border border-[rgba(96,136,121,0.18)]'
+
+      case 'transporte':
+        return 'bg-[rgba(93,126,214,0.12)] text-[#5D7ED6] border border-[rgba(93,126,214,0.18)]'
+
+      case 'lazer':
+        return 'bg-[rgba(168,93,214,0.12)] text-[#8F5DD6] border border-[rgba(168,93,214,0.18)]'
+
+      case 'compras':
+        return 'bg-[rgba(214,168,93,0.12)] text-[var(--warning)] border border-[rgba(214,168,93,0.20)]'
+
+      case 'saude':
+        return 'bg-[rgba(95,141,118,0.12)] text-[var(--success)] border border-[rgba(95,141,118,0.20)]'
+
+      default:
+        return 'bg-[rgba(138,143,140,0.12)] text-[var(--text-secondary)] border border-[rgba(138,143,140,0.20)]'
+    }
+  }
+
+  function getDateLabel(dateString: string) {
+    const [year, month, day] = dateString
+      .split('-')
+      .map(Number)
+
+    const target = new Date(
+      year,
+      month - 1,
+      day
+    )
+
+    const today = new Date()
+
+    const normalize = (d: Date) =>
+      new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate()
+      )
+
+    const diff =
+      (normalize(today).getTime() -
+        normalize(target).getTime()) /
+      (1000 * 60 * 60 * 24)
+
+    if (diff === 0) return 'Hoje'
+    if (diff === 1) return 'Ontem'
+    if (diff === 2) return 'Anteontem'
+
+    return formatBRDate(dateString)
+  }
+
+  const allExpenses = [
+    ...sharedAdjustments.map(a => ({
+      ...a,
+      type: 'shared'
+    })),
+
+    ...variableExpenses.map(v => ({
+      ...v,
+      type: 'expense'
+    }))
+  ]
+
+  const sortedExpenses = [...allExpenses].sort(
+    (a, b) => {
+      const aDate = a.date.split('T')[0]
+      const bDate = b.date.split('T')[0]
+
+      return (
+        new Date(bDate).getTime() -
+        new Date(aDate).getTime()
+      )
+    }
+  )
+
+  const groupedExpenses = sortedExpenses.reduce(
+    (acc, item) => {
+      const key = item.date.split('T')[0]
+
+      if (!acc[key]) {
+        acc[key] = []
+      }
+
+      acc[key].push(item)
+
+      return acc
+    },
+    {} as Record<string, typeof allExpenses>
+  )
+  
+  const totalExpenses = allExpenses.reduce(
+    (sum, item) => sum + item.amount,
+    0
+  )
+
+  const todayExpenses = allExpenses
+    .filter(item => {
+      const itemDate = item.date.split('T')[0]
+      return itemDate === todayISO
+    })
+    .reduce(
+      (sum, item) => sum + item.amount,
+      0
+    )
+
+  const totalRecords = allExpenses.length
+  
+  const currentMonth = new Date().getMonth()
+  const currentYear = new Date().getFullYear()
+
+  const monthExpenses = allExpenses
+    .filter(item => {
+      const date = new Date(item.date)
+
+      return (
+        date.getMonth() === currentMonth &&
+        date.getFullYear() === currentYear
+      )
+    })
+    .reduce(
+      (sum, item) => sum + item.amount,
+      0
+    )
+
+  return (
+    <div className="flex flex-col gap-8">
+
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+          Gastos Variáveis
+        </h1>
+
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+          Registre despesas do dia a dia e acompanhe seus gastos.
+        </p>
+      </div>
+
+      {/* Summary Cards */}
+        <section
+          className="
+            grid
+            gap-4
+            md:grid-cols-3
+          "
+        >
+
+          <div
+            className="
+              rounded-3xl
+              border border-[var(--border)]
+              bg-[var(--surface)]
+              p-5
+              shadow-[var(--shadow-soft)]
+            "
+          >
+            <p className="text-sm text-[var(--text-secondary)]">
+              Gastos este mês
+            </p>
+
+            <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+              {currency.format(monthExpenses)}
+            </p>
+          </div>
+
+          <div
+            className="
+              rounded-3xl
+              border border-[var(--border)]
+              bg-[var(--surface)]
+              p-5
+              shadow-[var(--shadow-soft)]
+            "
+          >
+            <p className="text-sm text-[var(--text-secondary)]">
+              Gastos hoje
+            </p>
+
+            <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+              {currency.format(todayExpenses)}
+            </p>
+          </div>
+
+          <div
+            className="
+              rounded-3xl
+              border border-[var(--border)]
+              bg-[var(--surface)]
+              p-5
+              shadow-[var(--shadow-soft)]
+            "
+          >
+            <p className="text-sm text-[var(--text-secondary)]">
+              Registros
+            </p>
+
+            <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+              {totalRecords}
+            </p>
+          </div>
+
+        </section>
+
+      {/* Add Form */}
+      <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 md:p-6 shadow-[var(--shadow-soft)]">
+        <form
+          onSubmit={handleAdd}
+          className="flex flex-col gap-4 lg:flex-row lg:items-end"
+        >
+          <div className="flex-1">
+            <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+              Descrição
+            </label>
+
+            <input
+              placeholder="Ex: Restaurante"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="
+                h-12 w-full rounded-2xl
+                border border-[var(--border)]
+                bg-[var(--surface)]
+                px-4
+                text-sm text-[var(--text-primary)]
+                outline-none
+                transition
+                placeholder:text-[var(--text-muted)]
+                focus:border-[var(--primary)]
+                focus:ring-4
+                focus:ring-[rgba(96,136,121,0.10)]
+              "
+            />
+          </div>
+
+          <div className="w-full lg:w-[180px]">
+            <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+              Valor
+            </label>
+
+            <CurrencyInput
+              value={amount}
+              onChange={setAmount}
+              className="
+                h-12 w-full rounded-2xl
+                border border-[var(--border)]
+                bg-[var(--surface)]
+                px-4
+                text-sm text-[var(--text-primary)]
+                outline-none
+                transition
+                focus:border-[var(--primary)]
+                focus:ring-4
+                focus:ring-[rgba(96,136,121,0.10)]
+              "
+            />
+          </div>
+
+          <div className="w-full lg:w-[180px]">
+            <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+              Data
+            </label>
+
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="
+                h-12 w-full rounded-2xl
+                border border-[var(--border)]
+                bg-[var(--surface)]
+                px-4
+                text-sm text-[var(--text-primary)]
+                outline-none
+                transition
+                focus:border-[var(--primary)]
+                focus:ring-4
+                focus:ring-[rgba(96,136,121,0.10)]
+              "
+            />
+          </div>
+
+          <div className="w-full lg:w-[180px]">
+            <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+              Categoria
+            </label>
+            <div className="relative">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4 pr-10
+                  appearance-none
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              >
+                <option value="alimentacao">Alimentação</option>
+                <option value="transporte">Transporte</option>
+                <option value="lazer">Lazer</option>
+                <option value="compras">Compras</option>
+                <option value="saude">Saúde</option>
+                <option value="outros">Outros</option>
+              </select>
+
+               <ChevronDown
+                  size={16}
+                  className="
+                    pointer-events-none
+                    absolute
+                    right-4
+                    top-1/2
+                    -translate-y-1/2
+                    text-[var(--text-muted)]
+                  "
+                />
+              </div>
+          </div>
+
+          <button
+            className="
+              h-12 rounded-2xl
+              bg-[var(--primary)]
+              px-5
+              text-sm font-medium text-white
+              transition-all duration-200
+              hover:bg-[var(--primary-hover)]
+              hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+              active:scale-[0.99]
+            "
+          >
+            Adicionar
+          </button>
+        </form>
+      </section>
+
+      {/* Expenses */}
+      <section className="flex flex-col gap-8">
+        {variableExpenses.length === 0 &&
+        sharedAdjustments.length === 0 ? (
+          <div
+            className="
+              rounded-3xl
+              border border-dashed border-[var(--border)]
+              bg-[var(--surface)]
+              p-10
+              text-center
+              shadow-[var(--shadow-soft)]
+            "
+          >
+            <p className="text-sm text-[var(--text-secondary)]">
+              Nenhum gasto variável cadastrado.
+            </p>
+          </div>
+        ) : (
+
+          Object.entries(groupedExpenses).map(([date, expenses]: [string, any[]]) => {
+            const totalDay = expenses.reduce(
+              (sum, item) => sum + item.amount,
+              0
+            )
+
+            return (
+              <div key={date} className="flex flex-col gap-4">
+                {/* Cabeçalho da data */}
+                <div>
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                    {getDateLabel(date)}
+                  </h2>
+
+                  <div className="mt-2 inline-flex items-center rounded-full bg-[rgba(96,136,121,0.12)] px-3 py-1 text-sm font-medium text-[var(--primary)]">
+                    Total do dia: {currency.format(totalDay)}
+                  </div>
+
+                  <div className="mt-1 h-px bg-[var(--divider)]" />
                 </div>
-                <div className="text-sm text-gray-500">{subtitle}</div>
+
+                {/* Cards daquele dia */}
+                {expenses.map((item) => {
+                  if (item.type === 'shared') {
+                    const gid = item.groupId
+                    const group = gid ? groupsMap[gid] : null
+
+                    return (
+                      <SharedExpenseCard
+                        key={item.id}
+                        expense={item}
+                        groupName={group?.name}
+                        onOpen={() =>
+                          gid && navigate(`/shared/${gid}`)
+                        }
+                      />
+                    )
+                  }
+
+                  return (
+                    <VariableExpenseCard
+                      key={item.id}
+                      expense={item}
+                      categoryLabel={getCategoryLabel(item.category)}
+                      categoryStyles={getCategoryStyles(item.category)}
+                      onEdit={() => openEdit(item)}
+                      onDelete={() =>
+                        setConfirmDelete({
+                          id: item.id,
+                          title: item.title
+                        })
+                      }
+                    />
+                  )
+                })}
               </div>
-              <div className="flex items-center gap-3">
-                <div className="font-semibold">R$ {a.amount.toFixed(2)}</div>
-                <button onClick={() => { if (gid) navigate(`/shared/${gid}`) }} className="text-sm text-teal-600 p-2">Abrir</button>
-              </div>
-            </li>
-          )
-        })}
-        {variableExpenses.map(v => (
-          <li key={v.id} className="p-3 bg-white dark:bg-gray-800 rounded shadow flex justify-between items-center">
-            <div className="min-w-0">
-              <div className="min-w-0 flex items-center gap-2">
-                  <div className="font-medium truncate">{v.title}</div>
-                  <div className="text-sm text-gray-500">{formatBRDate(v.date)}</div>
-              </div>
-              <div className="text-sm text-gray-500">{v.category.charAt(0).toUpperCase() + v.category.slice(1)}</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="font-semibold">R$ {v.amount.toFixed(2)}</div>
-              <button onClick={() => openEdit(v)} className="text-xl md:text-sm text-teal-600 p-2">✎</button>
-              <button onClick={() => setConfirmDelete({ id: v.id, title: v.title })} className="text-base md:text-sm text-red-500 p-1">🗑</button>
-            </div>
-          </li>
-        ))}
-      </ul>
+            )
+          })
+        )}
+      </section>
+
       {editing && (
-        <Modal title="Editar gasto variável" onClose={() => setEditing(null)}>
-          <form onSubmit={(e)=>{ e.preventDefault(); saveEdit() }} className="space-y-2">
-            <input value={editing.title} onChange={e=>setEditing({...editing, title: e.target.value})} className="w-full p-2 h-10 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <CurrencyInput value={editing.amount} onChange={(v)=>setEditing({...editing, amount: v})} className="w-full p-2 h-10 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <input type="date" value={editing.date} onChange={e=>setEditing({...editing, date: e.target.value})} className="w-full p-2 h-10 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100 appearance-none box-border text-left leading-6 max-w-full" />
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={()=>setEditing(null)} className="px-3 py-1 rounded border">Cancelar</button>
-              <button type="submit" className="px-3 py-1 rounded bg-teal-500 text-white">Salvar</button>
+        <Modal
+          title="Editar gasto variável"
+          onClose={() => setEditing(null)}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              saveEdit()
+            }}
+            className="space-y-5"
+          >
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Descrição
+              </label>
+
+              <input
+                value={editing.title}
+                onChange={(e) =>
+                  setEditing({
+                    ...editing,
+                    title: e.target.value
+                  })
+                }
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
             </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Valor
+              </label>
+
+              <CurrencyInput
+                value={editing.amount}
+                onChange={(v) =>
+                  setEditing({
+                    ...editing,
+                    amount: v
+                  })
+                }
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Data
+              </label>
+
+              <input
+                type="date"
+                value={editing.date}
+                onChange={(e) =>
+                  setEditing({
+                    ...editing,
+                    date: e.target.value
+                  })
+                }
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Categoria
+              </label>
+
+              <div className="relative">
+                <select
+                  value={editing.category}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      category: e.target.value
+                    })
+                  }
+                  className="
+                    h-12 w-full rounded-2xl
+                    border border-[var(--border)]
+                    bg-[var(--surface)]
+                    px-4 pr-10
+                    appearance-none
+                    text-sm text-[var(--text-primary)]
+                    outline-none
+                    transition
+                    focus:border-[var(--primary)]
+                    focus:ring-4
+                    focus:ring-[rgba(96,136,121,0.10)]
+                  "
+                >
+                  <option value="alimentacao">Alimentação</option>
+                  <option value="transporte">Transporte</option>
+                  <option value="lazer">Lazer</option>
+                  <option value="compras">Compras</option>
+                  <option value="saude">Saúde</option>
+                  <option value="outros">Outros</option>
+                </select>
+
+                <ChevronDown
+                  size={16}
+                  className="
+                    pointer-events-none
+                    absolute
+                    right-4
+                    top-1/2
+                    -translate-y-1/2
+                    text-[var(--text-muted)]
+                  "
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="
+                  h-11 rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-5
+                  text-sm font-medium
+                  hover:bg-[var(--surface-secondary)]
+                "
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  h-11 rounded-2xl
+                  bg-[var(--primary)]
+                  px-5
+                  text-sm font-medium text-white
+                  transition-all duration-200
+                  hover:bg-[var(--primary-hover)]
+                "
+              >
+                Salvar
+              </button>
+
+            </div>
+
           </form>
         </Modal>
       )}
+
       <ConfirmModal
         open={!!confirmDelete}
         title="Excluir gasto"
         message="Tem certeza que deseja excluir este gasto? Essa ação não poderá ser desfeita."
         onCancel={() => setConfirmDelete(null)}
-        onConfirm={() => confirmDelete && handleDelete(confirmDelete.id)}
+        onConfirm={() =>
+          confirmDelete && handleDelete(confirmDelete.id)
+        }
       />
-      <Toast message={toast ?? undefined} onClose={() => setToast(null)} />
+
+      <Toast
+        message={toast ?? undefined}
+        onClose={() => setToast(null)}
+      />
     </div>
   )
 }

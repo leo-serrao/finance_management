@@ -19,7 +19,9 @@ export function getLocalISODateFromDate(date: Date) {
 export function formatBRDate(date: string) {
   if (!date) return ''
 
-  const [year, month, day] = date.split('-')
+  const dateOnly = date.split('T')[0]
+
+  const [year, month, day] = dateOnly.split('-')
 
   return `${day}/${month}/${year}`
 }

@@ -65,40 +65,248 @@ export default function SharedGroups() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Compartilhados</h2>
+    <div className="flex flex-col gap-8">
+
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
         <div>
-          <button onClick={() => setOpen(true)} className="bg-teal-500 text-white px-3 py-1 rounded">+ Novo grupo</button>
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Grupos Compartilhados
+          </h1>
+
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Gerencie despesas e objetivos financeiros em conjunto.
+          </p>
         </div>
+
+        <button
+          onClick={() => setOpen(true)}
+          className="
+            h-12 w-full sm:w-auto
+            rounded-2xl
+            bg-[var(--primary)]
+            px-5
+            text-sm font-medium text-white
+            transition-all duration-200
+            hover:bg-[var(--primary-hover)]
+            hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+            active:scale-[0.99]
+          "
+        >
+          Novo grupo
+        </button>
+
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {groups.map(g => (
-          <Link to={`/shared/${g.id}`} key={g.id} className="block p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md">
-            <div className="text-lg font-medium">{g.name}</div>
-            <div className="text-sm text-gray-500 mt-2">Membros: {g.members?.length ?? 0}</div>
-          </Link>
-        ))}
-        {groups.length === 0 && (
-          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">Nenhum grupo encontrado</div>
+      {/* Groups */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+
+        {groups.length === 0 ? (
+          <div
+            className="
+              col-span-full
+              rounded-3xl
+              border border-dashed border-[var(--border)]
+              bg-[var(--surface)]
+              p-10
+              text-center
+              shadow-[var(--shadow-soft)]
+            "
+          >
+            <p className="text-sm text-[var(--text-secondary)]">
+              Você ainda não participa de nenhum grupo compartilhado.
+            </p>
+          </div>
+        ) : (
+          groups.map((g) => (
+            <Link
+              key={g.id}
+              to={`/shared/${g.id}`}
+              className="
+                rounded-3xl
+                border border-[var(--border)]
+                bg-[var(--surface)]
+                p-5
+                shadow-[var(--shadow-soft)]
+                transition-all duration-200
+                hover:border-[var(--primary)]
+                hover:shadow-[0_12px_28px_rgba(0,0,0,0.05)]
+              "
+            >
+              <div className="flex items-start justify-between gap-4">
+
+                <div className="min-w-0 flex-1">
+
+                  <div className="flex items-center gap-3">
+
+                    <div
+                      className="
+                        flex h-12 w-12 items-center justify-center
+                        rounded-2xl
+                        border border-[var(--border)]
+                        bg-[var(--surface-secondary)]
+                        text-lg
+                        font-semibold
+                        text-[var(--primary)]
+                      "
+                    >
+                      {g.name.charAt(0).toUpperCase()}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+
+                      <div
+                        className="
+                          truncate
+                          text-base
+                          font-semibold
+                          text-[var(--text-primary)]
+                        "
+                      >
+                        {g.name}
+                      </div>
+
+                      <div className="text-sm text-[var(--text-secondary)]">
+                        Grupo compartilhado
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-5">
+
+                    <span
+                      className="
+                        inline-flex items-center
+                        rounded-full
+                        border border-[rgba(96,136,121,0.18)]
+                        bg-[rgba(96,136,121,0.10)]
+                        px-3 py-1
+                        text-xs font-medium
+                        text-[var(--primary)]
+                      "
+                    >
+                      {g.members?.length ?? 0} membro{(g.members?.length ?? 0) > 1 ? 's' : ''}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </Link>
+          ))
         )}
-      </div>
+
+      </section>
 
       {open && (
-        <Modal title="Novo grupo compartilhado" onClose={() => setOpen(false)}>
-          <form onSubmit={(e)=>handleCreate(e)} className="space-y-3">
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do grupo" className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email do outro usuário" className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={()=>setOpen(false)} className="px-3 py-1 rounded border">Cancelar</button>
-              <button type="submit" className="px-3 py-1 rounded bg-teal-500 text-white">Criar</button>
+        <Modal
+          title="Novo grupo compartilhado"
+          onClose={() => setOpen(false)}
+        >
+          <form
+            onSubmit={(e) => handleCreate(e)}
+            className="space-y-5"
+          >
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Nome do grupo
+              </label>
+
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Casa"
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
             </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Email do outro usuário
+              </label>
+
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="usuario@email.com"
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="
+                  h-11 rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-5
+                  text-sm font-medium
+                  text-[var(--text-primary)]
+                  transition
+                  hover:bg-[var(--surface-secondary)]
+                "
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  h-11 rounded-2xl
+                  bg-[var(--primary)]
+                  px-5
+                  text-sm font-medium text-white
+                  transition-all duration-200
+                  hover:bg-[var(--primary-hover)]
+                  hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+                "
+              >
+                Criar grupo
+              </button>
+
+            </div>
+
           </form>
         </Modal>
       )}
 
-      <Toast message={toast} onClose={() => setToast(null)} />
+      <Toast
+        message={toast}
+        onClose={() => setToast(null)}
+      />
+
     </div>
   )
 }

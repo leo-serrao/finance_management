@@ -7,7 +7,7 @@ import Modal from '../components/Modal'
 import Toast from '../components/Toast'
 import { useFinanceStore } from '../store/useFinanceStore'
 import { format } from 'date-fns'
-import { calculate50_30_20, computeSmartDailyProjection } from '../utils/finance'
+import { calculate50_30_20, computeSmartDailyProjection, currency, getUnifiedVariableExpenses} from '../utils/finance'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getLocalISODate, getLocalISODateFromDate } from '../utils/date'
 import { subscribeToUserSharedAdjustments } from '../services/sharedUserAdjustments'
@@ -29,13 +29,10 @@ export default function Home() {
   const [sharedPayments, setSharedPayments] = useState<any[]>([])
 
   const mergedVariableExpenses = useMemo(() => {
-    const adjustmentsAsVars = (sharedAdjustments || []).map(a => ({ id: a.id, title: 'Compartilhado', amount: a.amount, category: 'shared', date: a.date }))
-    // merge arrays; do not mutate original
-    return [...variableExpenses, ...adjustmentsAsVars]
+    return getUnifiedVariableExpenses(variableExpenses, sharedAdjustments)
   }, [variableExpenses, sharedAdjustments])
 
   const proj = useMemo(() => computeSmartDailyProjection(netSalary, fixedExpenses, mergedVariableExpenses, payDay, savingsPercent), [netSalary, fixedExpenses, mergedVariableExpenses, payDay, savingsPercent])
-  const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
   // Shared summary for current month
   const sharedSummary = useMemo(() => {
@@ -64,28 +61,34 @@ export default function Home() {
     const days = 14
     const today = new Date()
     const map = new Map<string, number>()
+
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
       const key = getLocalISODateFromDate(d)
       map.set(key, 0)
     }
-    // include shared adjustments in the chart (use mergedVariableExpenses)
-    mergedVariableExpenses.forEach(v => {
+
+    const allExpenses = [
+      ...variableExpenses,
+      ...sharedAdjustments.map(a => ({
+        amount: a.amount,
+        date: a.date
+      }))
+    ]
+
+    allExpenses.forEach(v => {
       const key = v.date.split('T')[0]
       if (map.has(key)) {
         map.set(key, (map.get(key) || 0) + v.amount)
       }
     })
-    return Array.from(map.entries()).map(([date, amount]) => {
-      const [year, month, day] = date.split('-')
 
-      return {
-        date: `${day}/${month}`,
-        amount
-      }
+    return Array.from(map.entries()).map(([date, amount]) => {
+      const [, month, day] = date.split('-')
+      return { date: `${day}/${month}`, amount }
     })
-  }, [variableExpenses])
+  }, [mergedVariableExpenses])
 
   // highlight today's card when a new expense for today is added
   const [highlight, setHighlight] = useState(false)
@@ -146,102 +149,491 @@ export default function Home() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Dashboard</h2>
+    <div className="flex flex-col gap-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <button onClick={() => setOpenAdd(true)} className="bg-teal-500 text-white px-3 py-1 rounded">+ Novo gasto</button>
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Dashboard
+          </h1>
+
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Visão geral das suas finanças.
+          </p>
         </div>
+
+        <button
+          onClick={() => setOpenAdd(true)}
+          className="
+            h-11 rounded-2xl
+            bg-[var(--primary)]
+            px-5
+            text-sm font-medium text-white
+            transition-all duration-200
+            hover:bg-[var(--primaryHover)]
+            hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+            active:scale-[0.99]
+          "
+        >
+          + Novo gasto
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col items-start">
-          <div className="text-sm text-gray-500">Saldo recomendado para guardar</div>
-          <div className="text-2xl font-semibold">R$ {allocations.savings.toFixed(2)}</div>
+      {/* Top cards */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        
+        {/* Card 1 */}
+        <div
+          className="
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-6
+            shadow-[var(--shadow-soft)]
+          "
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Reserva recomendada
+          </div>
+
+          <div className="mt-3 text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+            {currency.format(allocations.savings)}
+          </div>
+
           {savingBoxes && savingBoxes.length > 0 && (
             <button
               onClick={() => navigate('/boxes')}
               aria-label="Ver caixinhas"
-              className="mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors flex items-center gap-2 cursor-pointer group hover:underline hover:underline-offset-2"
-              style={{ textDecorationSkipInk: 'auto' }}
+              className="
+                mt-5 flex items-center gap-2
+                text-sm text-[var(--text-secondary)]
+                transition-colors
+                hover:text-[var(--primary)]
+              "
             >
-              <span className="text-left">R$ {savingBoxes.reduce((s, b) => s + b.amount, 0).toFixed(2)} distribuídos em caixinhas</span>
-              <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M7.21 4.21a.75.75 0 011.06 0l4.5 4.5a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 11-1.06-1.06L10.44 10 7.21 6.27a.75.75 0 010-1.06z" clipRule="evenodd" />
+              <span className="text-left">
+                Total em Caixinhas:  {currency.format(savingBoxes.reduce((s, b) => s + b.amount, 0))}
+              </span>
+
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.21 4.21a.75.75 0 011.06 0l4.5 4.5a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 11-1.06-1.06L10.44 10 7.21 6.27a.75.75 0 010-1.06z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
           )}
         </div>
-        <div onClick={() => navigate('/shared')} className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="text-sm text-gray-500">Gastos compartilhados (mês)</div>
-          <div className="text-2xl font-semibold">{currency.format(sharedSummary.total)}</div>
-          <div className="text-sm text-gray-500 mt-2">Você deve: {currency.format(sharedSummary.youOwe)}</div>
-          <div className="text-sm text-gray-500">Devem para você: {currency.format(sharedSummary.owedToYou)}</div>
-        </div>
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="text-sm text-gray-500">Gasto diário disponível</div>
-          <div className={`text-2xl font-semibold ${proj.todayBudget < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{currency.format(proj.todayBudget)}</div>
-          <div className={`text-sm mt-2 ${proj.tomorrowBudget > proj.todayBudget ? 'text-emerald-600 dark:text-emerald-400' : proj.tomorrowBudget < proj.todayBudget ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-300'}`}>
-            Amanhã: {currency.format(proj.tomorrowBudget)}
-            <span className="ml-2 text-xs">{proj.tomorrowBudget > proj.todayBudget ? '↑ você gastou menos hoje' : proj.tomorrowBudget < proj.todayBudget ? '↓ hoje você extrapolou o orçamento' : 'mesmo que hoje'}</span>
+
+        {/* Card 2 */}
+        <div
+          onClick={() => navigate('/shared')}
+          className="
+            cursor-pointer
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-6
+            shadow-[var(--shadow-soft)]
+            transition-all duration-200
+            hover:border-[var(--primary)]
+            hover:shadow-[0_12px_28px_rgba(0,0,0,0.06)]
+          "
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Gastos compartilhados (mês)
+          </div>
+
+          <div className="mt-3 text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+            {currency.format(sharedSummary.total)}
+          </div>
+
+          <div className="mt-5 space-y-2">
+            <div className="text-sm text-[var(--text-secondary)]">
+              Você deve: {currency.format(sharedSummary.youOwe)}
+            </div>
+
+            <div className="text-sm text-[var(--text-secondary)]">
+              Devem para você: {currency.format(sharedSummary.owedToYou)}
+            </div>
           </div>
         </div>
-        <div className={"p-4 bg-white dark:bg-gray-800 rounded-lg shadow " + (highlight ? 'today-highlight' : '')}>
-          <div className="text-sm text-gray-500">Gasto feito hoje</div>
-          <div className="text-2xl font-semibold">R$ {todaySpent.toFixed(2)}</div>
+
+        {/* Card 3 */}
+        <div
+          className="
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-6
+            shadow-[var(--shadow-soft)]
+          "
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Gasto diário disponível
+          </div>
+
+          <div
+            className={`mt-3 text-3xl font-semibold tracking-tight ${
+              proj.todayBudget < 0
+                ? 'text-red-500'
+                : 'text-[var(--text-primary)]'
+            }`}
+          >
+            {currency.format(proj.todayBudget)}
+          </div>
+
+          <div
+            className={`mt-5 text-sm ${
+              proj.tomorrowBudget > proj.todayBudget
+                ? 'text-emerald-500'
+                : proj.tomorrowBudget < proj.todayBudget
+                ? 'text-red-500'
+                : 'text-[var(--text-secondary)]'
+            }`}
+          >
+            Amanhã: {currency.format(proj.tomorrowBudget)}
+
+            <span className="ml-2 text-xs opacity-80">
+              {proj.tomorrowBudget > proj.todayBudget
+                ? '↑ você gastou menos hoje'
+                : proj.tomorrowBudget < proj.todayBudget
+                ? '↓ hoje você extrapolou o orçamento'
+                : 'mesmo que hoje'}
+            </span>
+          </div>
         </div>
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="text-sm text-gray-500">Dias até pagamento</div>
-          <div className="text-2xl font-semibold">{proj.daysRemaining}</div>
+
+        {/* Card 4 */}
+        <div
+          onClick={() => navigate('/variable')}
+          className={`
+            cursor-pointer
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-6
+            shadow-[var(--shadow-soft)]
+            transition-all duration-200
+            hover:border-[var(--primary)]
+            hover:shadow-[0_12px_28px_rgba(0,0,0,0.06)]
+            ${highlight ? 'today-highlight' : ''}
+          `}
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Gasto feito hoje
+          </div>
+
+          <div className="mt-3 text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+            {currency.format(todaySpent)}
+          </div>
+        </div>
+
+        {/* Card 5 */}
+        <div
+          className="
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-6
+            shadow-[var(--shadow-soft)]
+          "
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Dias até pagamento
+          </div>
+
+          <div className="mt-3 text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+            {proj.daysRemaining}
+          </div>
         </div>
       </div>
 
+      {/* Modal */}
       {openAdd && (
-        <Modal title="Adicionar gasto variável" onClose={() => setOpenAdd(false)}>
-          <form onSubmit={(e)=>handleQuickAdd(e)} className="space-y-2">
-            <input placeholder="Título" value={newTitle} onChange={e=>setNewTitle(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <CurrencyInput value={newAmount} onChange={setNewAmount} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-            <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} className="w-full p-2 h-10 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100 appearance-none box-border text-left leading-6 max-w-full" />
-            <select value={newCategory} onChange={e=>setNewCategory(e.target.value)} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100">
-              <option value="alimentacao">Alimentação</option>
-              <option value="transporte">Transporte</option>
-              <option value="lazer">Lazer</option>
-              <option value="compras">Compras</option>
-              <option value="saude">Saúde</option>
-              <option value="outros">Outros</option>
-            </select>
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={()=>setOpenAdd(false)} className="px-3 py-1 rounded border">Cancelar</button>
-              <button type="submit" className="px-3 py-1 rounded bg-teal-500 text-white">Adicionar</button>
+        <Modal
+          title="Adicionar gasto variável"
+          onClose={() => setOpenAdd(false)}
+        >
+          <form
+            onSubmit={(e) => handleQuickAdd(e)}
+            className="space-y-4"
+          >
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Título
+              </label>
+
+              <input
+                placeholder="Ex: Mercado"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm
+                  outline-none
+                  transition
+                  placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Valor
+              </label>
+
+              <CurrencyInput
+                value={newAmount}
+                onChange={setNewAmount}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Data
+              </label>
+
+              <input
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Categoria
+              </label>
+
+              <select
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              >
+                <option value="alimentacao">Alimentação</option>
+                <option value="transporte">Transporte</option>
+                <option value="lazer">Lazer</option>
+                <option value="compras">Compras</option>
+                <option value="saude">Saúde</option>
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setOpenAdd(false)}
+                className="
+                  h-11 rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-5
+                  text-sm font-medium
+                  text-[var(--text-primary)]
+                  transition
+                  hover:bg-[var(--surface-secondary)]
+                "
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  h-11 rounded-2xl
+                  bg-[var(--primary)]
+                  px-5
+                  text-sm font-medium text-white
+                  transition-all duration-200
+                  hover:bg-[var(--primaryHover)]
+                  hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+                "
+              >
+                Adicionar
+              </button>
             </div>
           </form>
         </Modal>
       )}
 
-      <section className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-white dark:bg-gray-800 rounded shadow order-1 md:order-2">
-          <h3 className="font-medium mb-2">Resumo</h3>
-          <div className="text-sm text-gray-500">Gastos fixos: R$ {allocations.totalFixed.toFixed(2)}</div>
-          <div className="text-sm text-gray-500">Disponível para variáveis: R$ {allocations.availableForVariables.toFixed(2)}</div>
-          <div className="text-sm text-gray-500">Gastos variáveis totais: R$ {proj.totalVariableSpent.toFixed(2)}</div>
-          <div className={`mt-3 text-lg font-semibold ${proj.totalRemaining < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>Total restante: {currency.format(proj.totalRemaining)}</div>
+      {/* Bottom section */}
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        
+        {/* Resumo */}
+        <div
+          className="
+            order-1 xl:order-2
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-6
+            shadow-[var(--shadow-soft)]
+          "
+        >
+          <p className="text-lg font-semibold text-[var(--text-primary)]">
+            Resumo financeiro
+          </p>
+
+          <div className="mt-5 space-y-4">
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[var(--text-secondary)]">
+                Gastos fixos
+              </span>
+
+              <span className="font-medium text-[var(--text-primary)]">
+                {currency.format(
+                  allocations.totalFixed
+                )}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[var(--text-secondary)]">
+                Disponível para variáveis
+              </span>
+
+              <span className="font-medium text-[var(--text-primary)]">
+                {currency.format(
+                  allocations.availableForVariables
+                )}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[var(--text-secondary)]">
+                Gastos variáveis totais
+              </span>
+
+              <span className="font-medium text-[var(--text-primary)]">
+                {currency.format(
+                  proj.totalVariableSpent
+                )}
+              </span>
+            </div>
+
+            <div className="h-px bg-[var(--divider)]" />
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[var(--text-secondary)]">
+                Total restante
+              </span>
+
+              <span
+                className={`text-2xl font-semibold tracking-tight ${
+                  proj.totalRemaining < 0
+                    ? 'text-red-500'
+                    : 'text-[var(--text-primary)]'
+                }`}
+              >
+                {currency.format(
+                  proj.totalRemaining
+                )}
+              </span>
+            </div>
+
+          </div>
         </div>
 
-        <div className="md:col-span-2 p-4 bg-white dark:bg-gray-800 rounded shadow order-2 md:order-1">
-          <h3 className="font-medium mb-2">Gastos (14 dias)</h3>
-          <div style={{ width: '100%', height: 220 }}>
+        {/* Chart */}
+        <div
+          className="
+            order-2 xl:order-1
+            xl:col-span-2
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-6
+            shadow-[var(--shadow-soft)]
+          "
+        >
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+            Gastos (14 dias)
+          </h3>
+
+          <div className="mt-6 h-[240px] w-full">
             <ResponsiveContainer>
               <LineChart data={chartData}>
-                <XAxis dataKey="date" />
-                <YAxis />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: '#8B8B8B', fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+
+                <YAxis
+                  tick={{ fill: '#8B8B8B', fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+
                 <Tooltip />
-                <Line type="monotone" dataKey="amount" stroke="#0ea5a4" strokeWidth={2} dot={false} />
+
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="var(--primary)"
+                  strokeWidth={3}
+                  dot={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
       </section>
-      <Toast message={toast ?? undefined} onClose={() => setToast(null)} />
+
+      <Toast
+        message={toast ?? undefined}
+        onClose={() => setToast(null)}
+      />
     </div>
   )
 }

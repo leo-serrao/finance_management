@@ -1,5 +1,26 @@
 import React, { useState } from 'react'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
+
+import {
+  LayoutDashboard,
+  Receipt,
+  Wallet,
+  PiggyBank,
+  Users,
+  BarChart3,
+  Settings,
+  LogOut,
+  Moon,
+  Sun,
+  Menu,
+  X,
+} from 'lucide-react'
+
 import { useAuth } from '../contexts/AuthContext'
 import { useFinanceStore } from '../store/useFinanceStore'
 import { useTheme } from '../contexts/ThemeContext'
@@ -7,387 +28,417 @@ import { useTheme } from '../contexts/ThemeContext'
 export default function Header() {
   const { user, logout } = useAuth()
   const { profile } = useFinanceStore()
-  const navigate = useNavigate()
   const { theme, toggle } = useTheme()
 
+  const navigate = useNavigate()
   const location = useLocation()
-  const financeActive =
-    location.pathname.startsWith('/fixed') ||
-    location.pathname.startsWith('/variable') ||
-    location.pathname.startsWith('/boxes')
 
-  const [open, setOpen] = useState(false)
-  const [financeOpen, setFinanceOpen] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   async function handleLogout() {
     await logout()
     navigate('/login')
   }
 
-  const navClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-lg text-sm transition ${
-      isActive
-        ? 'bg-teal-500 text-white'
-        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-    }`
+  const navItemClass = ({ isActive }: { isActive: boolean }) =>
+    `
+      group flex items-center gap-3
+      rounded-2xl px-4 py-3
+      text-sm font-medium
+      transition-all duration-200
+      ${
+        isActive
+          ? `
+            bg-[var(--surface-secondary)]
+            text-[var(--text-primary)]
+          `
+          : `
+            text-[var(--text-secondary)]
+            hover:bg-[var(--surface-secondary)]
+            hover:text-[var(--text-primary)]
+          `
+      }
+    `
+
+  const mobileNavItemClass = ({ isActive }: { isActive: boolean }) =>
+    `
+      flex items-center gap-3
+      rounded-2xl px-4 py-3
+      text-sm font-medium
+      transition-all duration-200
+      ${
+        isActive
+          ? `
+            bg-[var(--primary)]
+            text-white
+          `
+          : `
+            bg-[var(--surface)]
+            text-[var(--text-secondary)]
+            border border-[var(--border)]
+          `
+      }
+    `
 
   return (
-    <header
-      className="
-        sticky top-0 z-40
-        border-b border-gray-200/50 dark:border-gray-700/50
-        bg-white/70 dark:bg-gray-900/70
-        backdrop-blur-xl
-      "
-    >
-      <div className="container mx-auto h-16 px-4 flex items-center justify-between">
-        {/* LEFT */}
-        <div className="flex items-center gap-8">
-
-          {/* Logo */}
+    <>
+      {/* ========================= */}
+      {/* DESKTOP SIDEBAR */}
+      {/* ========================= */}
+      <aside
+        className="
+          fixed left-0 top-0 z-40
+          hidden h-screen w-[260px] lg:flex
+          flex-col
+          overflow-hidden
+          border-r border-[var(--border)]
+          bg-[var(--surface)]
+        "
+      >
+        {/* TOP */}
+        <div className="border-b border-[var(--divider)] p-6">
           <Link
             to="/"
-            className="flex items-center gap-2 shrink-0"
+            className="flex items-center gap-3"
           >
-            <div className="w-9 h-9 rounded-xl bg-teal-500 text-white flex items-center justify-center font-bold">
-              $
-            </div>
+            <img
+              src="/no_text_logo.png"
+              alt="PACT"
+              className="h-11 w-11 object-contain"
+            />
 
             <div>
-              <div className="font-semibold leading-tight text-sm sm:text-base">
-                Finance Manager
-              </div>
+              <h2 className="mt-1 text-xs text-[var(--text-primary)]">
+                PACT
+              </h2>
 
-              <div className="hidden sm:block text-xs text-gray-500 dark:text-gray-400">
-                Controle financeiro
-              </div>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
+                Finanças a dois
+              </p>
             </div>
           </Link>
+        </div>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-2">
+        {/* NAV */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <nav className="space-y-1">
 
-            <NavLink to="/" className={navClass}>
+            <NavLink
+              to="/"
+              className={navItemClass}
+            >
+              <LayoutDashboard size={18} strokeWidth={1.8} />
               Dashboard
             </NavLink>
 
-            {/* Finance dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setFinanceOpen(v => !v)}
-                className={`
-                  px-3 py-2 rounded-lg text-sm transition
-                  flex items-center gap-1
-                  ${
-                    financeActive
-                      ? 'bg-teal-500 text-white'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }
-                `}
-              >
-                Finanças
-                <span className="text-xs">▼</span>
-              </button>
+            <NavLink
+              to="/fixed"
+              className={navItemClass}
+            >
+              <Receipt size={18} strokeWidth={1.8} />
+              Gastos Fixos
+            </NavLink>
 
-              {financeOpen && (
-                <div
-                  className="
-                    absolute top-12 left-0 w-52
-                    rounded-xl border
-                    border-gray-200 dark:border-gray-700
-                    bg-white dark:bg-gray-900
-                    shadow-xl overflow-hidden
-                  "
-                >
-                  <NavLink
-                    to="/fixed"
-                    onClick={() => setFinanceOpen(false)}
-                    className={({ isActive }) =>
-                      `block px-4 py-3 text-sm transition ${
-                        isActive
-                          ? 'bg-teal-500 text-white'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`
-                    }
-                  >
-                    Gastos Fixos
-                  </NavLink>
+            <NavLink
+              to="/variable"
+              className={navItemClass}
+            >
+              <Wallet size={18} strokeWidth={1.8} />
+              Variáveis
+            </NavLink>
 
-                  <NavLink
-                    to="/variable"
-                    onClick={() => setFinanceOpen(false)}
-                    className={({ isActive }) =>
-                      `block px-4 py-3 text-sm transition ${
-                        isActive
-                          ? 'bg-teal-500 text-white'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`
-                    }
-                  >
-                    Gastos Variáveis
-                  </NavLink>
+            <NavLink
+              to="/boxes"
+              className={navItemClass}
+            >
+              <PiggyBank size={18} strokeWidth={1.8} />
+              Caixinhas
+            </NavLink>
 
-                  <NavLink
-                    to="/boxes"
-                    onClick={() => setFinanceOpen(false)}
-                    className={({ isActive }) =>
-                      `block px-4 py-3 text-sm transition ${
-                        isActive
-                          ? 'bg-teal-500 text-white'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`
-                    }
-                  >
-                    Caixinhas
-                  </NavLink>
-                </div>
-              )}
-            </div>
-
-            <NavLink to="/shared" className={navClass}>
+            <NavLink
+              to="/shared"
+              className={navItemClass}
+            >
+              <Users size={18} strokeWidth={1.8} />
               Compartilhados
             </NavLink>
 
-            <NavLink to="/reports" className={navClass}>
+            <NavLink
+              to="/reports"
+              className={navItemClass}
+            >
+              <BarChart3 size={18} strokeWidth={1.8} />
               Relatórios
             </NavLink>
 
           </nav>
         </div>
 
-        {/* RIGHT */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* BOTTOM */}
+        <div className="border-t border-[var(--divider)] p-4">
 
-          {/* Theme */}
-          <button
-            onClick={toggle}
-            aria-label="Toggle theme"
+          {/* User */}
+          <div
             className="
-              w-10 h-10 rounded-xl border
-              border-gray-200 dark:border-gray-700
-              flex items-center justify-center
-              hover:bg-gray-100 dark:hover:bg-gray-800
-              transition
+              mb-3 flex items-center gap-3
+              rounded-2xl
+              border border-[var(--border)]
+              bg-[var(--surface-secondary)]
+              p-3
             "
           >
-            {theme === 'dark' ? '🌙' : '☀️'}
-          </button>
-
-          {!user ? (
-            <Link
-              to="/login"
+            <div
               className="
-                px-4 py-2 rounded-xl
-                bg-teal-500 text-white text-sm
-                hover:bg-teal-600 transition
+                flex h-11 w-11 items-center justify-center
+                rounded-full
+                bg-[var(--primary)]
+                text-sm font-semibold text-white
               "
             >
-              Login
+              {(profile?.displayName ?? user?.email ?? 'U')
+                .charAt(0)
+                .toUpperCase()}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-[var(--text-primary)]">
+                {profile?.displayName ?? 'Usuário'}
+              </p>
+
+              <p className="truncate text-xs text-[var(--text-muted)]">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-2">
+
+            <Link
+              to="/settings"
+              className="
+                flex items-center gap-3
+                rounded-2xl px-4 py-3
+                text-sm font-medium
+                text-[var(--text-secondary)]
+                transition
+                hover:bg-[var(--surface-secondary)]
+                hover:text-[var(--text-primary)]
+              "
+            >
+              <Settings size={18} strokeWidth={1.8} />
+              Configurações
             </Link>
-          ) : (
-            <div className="relative">
 
-              <button
-                onClick={() => setProfileOpen(v => !v)}
-                className="
-                  flex items-center gap-3
-                  px-3 py-2 rounded-xl
-                  hover:bg-gray-100 dark:hover:bg-gray-800
-                  transition
-                "
-              >
-                <div
-                  className="
-                    w-9 h-9 rounded-full
-                    bg-teal-500 text-white
-                    flex items-center justify-center
-                    font-semibold text-sm
-                  "
-                >
-                  {(profile?.displayName ?? user.email ?? 'U')
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-
-                <div className="text-left">
-                  <div className="text-sm font-medium leading-tight">
-                    {profile?.displayName ?? 'Usuário'}
-                  </div>
-
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {user.email}
-                  </div>
-                </div>
-
-                <span className="text-xs">▼</span>
-              </button>
-
-              {profileOpen && (
-                <div
-                  className="
-                    absolute right-0 top-14 w-60
-                    rounded-xl border
-                    border-gray-200 dark:border-gray-700
-                    bg-white dark:bg-gray-900
-                    shadow-xl overflow-hidden
-                  "
-                >
-                  <NavLink
-                    to="/settings"
-                    onClick={() => setProfileOpen(false)}
-                    className="
-                      block px-4 py-3 text-sm
-                      hover:bg-gray-100 dark:hover:bg-gray-800
-                    "
-                  >
-                    Configurações
-                  </NavLink>
-
-                  <button
-                    onClick={handleLogout}
-                    className="
-                      w-full text-left
-                      px-4 py-3 text-sm text-red-500
-                      hover:bg-red-50 dark:hover:bg-red-950/30
-                    "
-                  >
-                    Sair
-                  </button>
-                </div>
+            <button
+              onClick={toggle}
+              className="
+                flex w-full items-center gap-3
+                rounded-2xl px-4 py-3
+                text-sm font-medium
+                text-[var(--text-secondary)]
+                transition
+                hover:bg-[var(--surface-secondary)]
+                hover:text-[var(--text-primary)]
+              "
+            >
+              {theme === 'dark' ? (
+                <Sun size={18} strokeWidth={1.8} />
+              ) : (
+                <Moon size={18} strokeWidth={1.8} />
               )}
 
-            </div>
-          )}
-        </div>
+              {theme === 'dark'
+                ? 'Modo claro'
+                : 'Modo escuro'}
+            </button>
 
-        {/* Mobile toggle */}
-        <div className="md:hidden flex items-center gap-2">
-          <button
-            onClick={toggle}
-            aria-label="Toggle theme"
-            className="w-10 h-10 flex items-center justify-center rounded border"
-          >
-            {theme === 'dark' ? '🌙' : '☀️'}
-          </button>
-
-          <button
-            onClick={() => setOpen(v => !v)}
-            aria-label="Open menu"
-            className="w-10 h-10 flex items-center justify-center rounded border"
-          >
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
+            <button
+              onClick={handleLogout}
+              className="
+                flex w-full items-center gap-3
+                rounded-2xl px-4 py-3
+                text-sm font-medium
+                text-[#C96B6B]
+                transition
+                hover:bg-red-50
+                dark:hover:bg-red-950/20
+              "
             >
-              <path
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d={open
-                  ? 'M6 18L18 6M6 6l12 12'
-                  : 'M3 12h18M3 6h18M3 18h18'}
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
+              <LogOut size={18} strokeWidth={1.8} />
+              Sair
+            </button>
 
-      {/* Mobile menu panel */}
-      {open && (
-        <div className="md:hidden border-t bg-white dark:bg-gray-900 shadow-lg">
-          <div className="p-4 space-y-2">
-      
-            <Link
-              to="/"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              to="/fixed"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              Fixos
-            </Link>
-
-            <Link
-              to="/boxes"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              Caixinhas
-            </Link>
-
-            <Link
-              to="/shared"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              Compartilhados
-            </Link>
-
-            <Link
-              to="/variable"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-            Variáveis
-          </Link>
-
-            <Link
-              to="/reports"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              Relatórios
-            </Link>
-
-            {!user ? (
-              <Link
-                to="/login"
-                onClick={() => setOpen(false)}
-                className="block rounded-lg px-4 py-3 bg-teal-500 text-white"
-              >
-                Login
-              </Link>
-            ) : (
-              <>
-                <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-
-                  <Link
-                    to="/settings"
-                    onClick={() => setOpen(false)}
-                    className="block rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-                  >
-                    Configurações
-                  </Link>
-
-                  <div className="px-2 pt-3 text-sm text-gray-500 break-all">
-                    {profile?.displayName ?? user.email}
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setOpen(false)
-                      handleLogout()
-                    }}
-                    className="mt-3 w-full rounded-lg bg-red-500 py-3 font-medium text-white hover:bg-red-600 transition"
-                  >
-                    Sair
-                  </button>
-
-                </div>
-              </>
-            )}
           </div>
         </div>
-      )}
-    </header>
+      </aside>
+
+      {/* ========================= */}
+      {/* MOBILE HEADER */}
+      {/* ========================= */}
+      <header
+        className="
+          sticky top-0 z-40
+          border-b border-[var(--border)]
+          bg-[rgba(245,246,244,0.92)]
+          backdrop-blur-xl
+          dark:bg-[rgba(16,19,18,0.92)]
+          lg:hidden
+        "
+      >
+        <div className="flex h-16 items-center justify-between px-4">
+
+          {/* Logo */}
+          <Link
+            to="/"
+            className="flex items-center gap-3"
+          >
+            <img
+              src="/text_logo.png"
+              alt="PACT"
+              className="h-9 w-9 object-contain"
+            />
+
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+                Finanças a dois
+              </p>
+          </Link>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+
+            <button
+              onClick={toggle}
+              className="
+                flex h-10 w-10 items-center justify-center
+                rounded-xl
+                border border-[var(--border)]
+                bg-[var(--surface)]
+              "
+            >
+              {theme === 'dark' ? (
+                <Sun size={18} strokeWidth={1.8} />
+              ) : (
+                <Moon size={18} strokeWidth={1.8} />
+              )}
+            </button>
+
+            <button
+              onClick={() => setMobileOpen(v => !v)}
+              className="
+                flex h-10 w-10 items-center justify-center
+                rounded-xl
+                border border-[var(--border)]
+                bg-[var(--surface)]
+              "
+            >
+              {mobileOpen ? (
+                <X size={20} strokeWidth={1.8} />
+              ) : (
+                <Menu size={20} strokeWidth={1.8} />
+              )}
+            </button>
+
+          </div>
+        </div>
+
+        {/* MOBILE MENU */}
+        {mobileOpen && (
+          <div
+            className="
+              border-t border-[var(--divider)]
+              bg-[var(--bg)]
+            "
+          >
+            <div className="space-y-2 p-4">
+
+              <NavLink
+                to="/"
+                onClick={() => setMobileOpen(false)}
+                className={mobileNavItemClass}
+              >
+                <LayoutDashboard size={18} strokeWidth={1.8} />
+                Dashboard
+              </NavLink>
+
+              <NavLink
+                to="/fixed"
+                onClick={() => setMobileOpen(false)}
+                className={mobileNavItemClass}
+              >
+                <Receipt size={18} strokeWidth={1.8} />
+                Gastos Fixos
+              </NavLink>
+
+              <NavLink
+                to="/variable"
+                onClick={() => setMobileOpen(false)}
+                className={mobileNavItemClass}
+              >
+                <Wallet size={18} strokeWidth={1.8} />
+                Variáveis
+              </NavLink>
+
+              <NavLink
+                to="/boxes"
+                onClick={() => setMobileOpen(false)}
+                className={mobileNavItemClass}
+              >
+                <PiggyBank size={18} strokeWidth={1.8} />
+                Caixinhas
+              </NavLink>
+
+              <NavLink
+                to="/shared"
+                onClick={() => setMobileOpen(false)}
+                className={mobileNavItemClass}
+              >
+                <Users size={18} strokeWidth={1.8} />
+                Compartilhados
+              </NavLink>
+
+              <NavLink
+                to="/reports"
+                onClick={() => setMobileOpen(false)}
+                className={mobileNavItemClass}
+              >
+                <BarChart3 size={18} strokeWidth={1.8} />
+                Relatórios
+              </NavLink>
+
+              <div className="my-4 h-px bg-[var(--divider)]" />
+
+              <NavLink
+                to="/settings"
+                onClick={() => setMobileOpen(false)}
+                className={mobileNavItemClass}
+              >
+                <Settings size={18} strokeWidth={1.8} />
+                Configurações
+              </NavLink>
+
+              <button
+                onClick={() => {
+                  setMobileOpen(false)
+                  handleLogout()
+                }}
+                className="
+                  flex w-full items-center gap-3
+                  rounded-2xl px-4 py-3
+                  text-sm font-medium
+                  text-[#C96B6B]
+                  border border-red-100
+                  bg-red-50
+                "
+              >
+                <LogOut size={18} strokeWidth={1.8} />
+                Sair
+              </button>
+
+            </div>
+          </div>
+        )}
+      </header>
+    </>
   )
 }

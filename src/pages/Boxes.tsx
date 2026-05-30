@@ -8,6 +8,11 @@ import ConfirmModal from '../components/ConfirmModal'
 import { addSavingBoxToUser, updateSavingBoxInUser, deleteSavingBoxFromUser } from '../services/savingBoxes'
 import { calculate50_30_20 } from '../utils/finance'
 
+import {
+  Pencil,
+  Trash2
+} from 'lucide-react'
+
 export default function Boxes() {
   const { profile, savingBoxes, addSavingBox, updateSavingBox, removeSavingBox } = useFinanceStore()
   const { user } = useAuth()
@@ -18,6 +23,7 @@ export default function Boxes() {
   const [amount, setAmount] = useState<number>(0)
   const [toast, setToast] = useState<{ message: string; variant?: 'success'|'error'|'warning'|'info' } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name?: string } | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const netSalary = profile?.netSalary ?? 0
   const fixedExpenses = profile?.fixedExpenses ?? []
@@ -28,6 +34,7 @@ export default function Boxes() {
   const remaining = Math.round((recommended - totalDistributed) * 100) / 100
 
   function openNew() {
+    setFormError(null)
     setEditing(null)
     setName('')
     setEmoji('')
@@ -38,7 +45,16 @@ export default function Boxes() {
   async function handleSave(e?: React.FormEvent) {
     e?.preventDefault()
     if (!name.trim() || amount <= 0) { setToast({ message: 'Preencha nome e valor maior que 0', variant: 'warning' }); return }
-    if (amount > remaining) { setToast({ message: 'Valor excede o recomendado restante', variant: 'error' }); return }
+    const currentAmount = editing?.amount ?? 0
+    const newTotal = totalDistributed - currentAmount + amount
+    if (newTotal > recommended) {
+      setFormError(
+        'O valor total das caixinhas ultrapassa o recomendado para guardar.'
+      )
+
+      return
+    }
+    setFormError(null)
     const box = { id: editing?.id ?? Date.now().toString(), name: name.trim(), amount, createdAt: new Date().toISOString(), emoji: emoji || undefined }
     try {
       if (user) {
@@ -59,72 +75,387 @@ export default function Boxes() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Caixinhas</h2>
+    <div className="flex flex-col gap-8">
+
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <button onClick={openNew} className="bg-teal-500 text-white px-3 py-1 rounded">+ Nova caixinha</button>
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+            Caixinhas
+          </h1>
+
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Organize seus objetivos financeiros e distribua sua reserva mensal.
+          </p>
         </div>
+
+        <button
+          onClick={openNew}
+          className="
+            h-12 w-full sm:w-auto
+            rounded-2xl
+            bg-[var(--primary)]
+            px-5
+            text-sm font-medium text-white
+          "
+        >
+          Nova caixinha
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="text-sm text-gray-500">Recomendado para guardar</div>
-          <div className="text-2xl font-semibold">R$ {recommended.toFixed(2)}</div>
-        </div>
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="text-sm text-gray-500">Total em caixinhas</div>
-          <div className="text-2xl font-semibold">R$ {totalDistributed.toFixed(2)}</div>
-        </div>
-        <div className={`p-4 bg-white dark:bg-gray-800 rounded-lg shadow ${remaining < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-          <div className="text-sm text-gray-500">Restante não distribuído</div>
-          <div className="text-2xl font-semibold">R$ {remaining.toFixed(2)}</div>
-        </div>
-      </div>
+      {/* Stats */}
+      <section className="grid gap-4 md:grid-cols-3">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {savingBoxes.map(b => (
-          <div key={b.id} className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-col justify-between">
-            <div>
-              <div className="text-lg font-medium truncate flex items-center gap-2">
-                <span className="text-2xl">{b.emoji ?? ' '}</span>
-                <span className="truncate">{b.name}</span>
-              </div>
-              <div className="text-sm text-gray-500 mt-2">R$ {b.amount.toFixed(2)}</div>
-            </div>
-            <div className="mt-4 flex gap-2 justify-end">
-              <button onClick={() => { setEditing(b); setName(b.name); setEmoji(b.emoji ?? ''); setAmount(b.amount); setOpen(true) }} className="px-3 py-1 rounded border">Editar</button>
-              <button onClick={() => setConfirmDelete({ id: b.id, name: b.name })} className="px-3 py-1 rounded bg-red-500 text-white">Excluir</button>
-            </div>
+        <div
+          className="
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-5
+            shadow-[var(--shadow-soft)]
+          "
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Recomendado para guardar
           </div>
-        ))}
-      </div>
+
+          <div className="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+            R$ {recommended.toFixed(2)}
+          </div>
+        </div>
+
+        <div
+          className="
+            rounded-3xl
+            border border-[var(--border)]
+            bg-[var(--surface)]
+            p-5
+            shadow-[var(--shadow-soft)]
+          "
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Total em caixinhas
+          </div>
+
+          <div className="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+            R$ {totalDistributed.toFixed(2)}
+          </div>
+        </div>
+
+        <div
+          className={`
+            rounded-3xl
+            border
+            bg-[var(--surface)]
+            p-5
+            shadow-[var(--shadow-soft)]
+            ${
+              remaining < 0
+                ? 'border-red-300'
+                : 'border-[var(--border)]'
+            }
+          `}
+        >
+          <div className="text-sm text-[var(--text-secondary)]">
+            Restante não distribuído
+          </div>
+
+          <div
+            className={`
+              mt-2 text-2xl font-semibold tracking-tight
+              ${
+                remaining < 0
+                  ? 'text-red-500'
+                  : 'text-[var(--text-primary)]'
+              }
+            `}
+          >
+            R$ {remaining.toFixed(2)}
+          </div>
+        </div>
+
+      </section>
+
+      {/* Boxes */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {savingBoxes.length === 0 ? (
+          <div
+            className="
+              col-span-full
+              rounded-3xl
+              border border-dashed border-[var(--border)]
+              bg-[var(--surface)]
+              p-10
+              text-center
+              shadow-[var(--shadow-soft)]
+            "
+          >
+            <p className="text-sm text-[var(--text-secondary)]">
+              Nenhuma caixinha criada.
+            </p>
+          </div>
+        ) : (
+          savingBoxes.map((b) => (
+            <div
+              key={b.id}
+              className="
+                rounded-3xl
+                border border-[var(--border)]
+                bg-[var(--surface)]
+                p-5
+                shadow-[var(--shadow-soft)]
+                transition-all duration-200
+                hover:border-[var(--primary)]
+                hover:shadow-[0_12px_28px_rgba(0,0,0,0.05)]
+              "
+            >
+              <div className="flex items-start justify-between gap-4">
+
+                <div className="flex-1 min-w-0">
+
+                  <div className="flex items-center gap-3">
+
+                    <div
+                      className="
+                        flex h-12 w-12 items-center justify-center
+                        rounded-2xl
+                        bg-[var(--surface-secondary)]
+                        border border-[var(--border)]
+                      "
+                    >
+                      <span className="text-2xl">
+                        {b.emoji ?? '💰'}
+                      </span>
+                    </div>
+
+                    <div className="min-w-0">
+
+                      <div className="truncate text-base font-semibold text-[var(--text-primary)]">
+                        {b.name}
+                      </div>
+
+                      <div className="text-sm text-[var(--text-secondary)]">
+                        {((b.amount / recommended) * 100).toFixed(0)}% da reserva recomendada
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-5">
+
+                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                      Valor reservado
+                    </div>
+
+                    <div className="mt-1 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+                      R$ {b.amount.toFixed(2)}
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <div className="flex items-start gap-1">
+
+                  <button
+                    onClick={() => {
+                      setFormError(null)
+                      setEditing(b)
+                      setName(b.name)
+                      setEmoji(b.emoji ?? '')
+                      setAmount(b.amount)
+                      setOpen(true)
+                    }}
+                    className="
+                      flex h-9 w-9 items-center justify-center
+                      rounded-xl
+                      text-[var(--primary)]
+                      transition-colors
+                      hover:bg-[var(--surface-secondary)]
+                    "
+                  >
+                    <Pencil size={16} strokeWidth={2} />
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setConfirmDelete({
+                        id: b.id,
+                        name: b.name
+                      })
+                    }
+                    className="
+                      flex h-9 w-9 items-center justify-center
+                      rounded-xl
+                      text-red-500
+                      transition-colors
+                      hover:bg-red-50
+                      dark:hover:bg-red-950/20
+                    "
+                  >
+                    <Trash2 size={16} strokeWidth={2} />
+                  </button>
+
+                </div>
+
+              </div>
+            </div>
+          ))
+        )}
+      </section>
 
       {open && (
-        <Modal title={editing ? 'Editar caixinha' : 'Nova caixinha'} onClose={() => setOpen(false)}>
-          <div className="w-full px-3">
-            <div className="max-w-sm mx-auto max-h-[85vh] overflow-y-auto p-2 sm:p-4 bg-transparent">
-              <form onSubmit={(e)=>handleSave(e)} className="space-y-3">
-              <input placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} className="w-full p-2 sm:p-3 h-10 sm:h-11 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Emoji (opcional)</label>
-                <div className="flex items-center gap-2">
-                  <input placeholder="Digite um emoji ou escolha abaixo" value={emoji} onChange={e=>setEmoji(e.target.value)} className="p-2 sm:p-3 h-10 sm:h-11 border rounded w-full bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-                </div>
-                <div className="mt-2 grid grid-flow-col auto-cols-min gap-2 justify-items-center overflow-x-auto py-1">
-                  {['🚗','✈️','🛡','💻','🏠','🎮','📱','💰'].map(em => (
-                    <button key={em} type="button" onClick={() => setEmoji(em)} className="w-8 h-8 flex items-center justify-center rounded-md border text-base transition-colors duration-150 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">{em}</button>
-                  ))}
-                </div>
-              </div>
-              <CurrencyInput value={amount} onChange={setAmount} className="w-full p-2 sm:p-3 h-10 sm:h-11 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
-              <div className="flex gap-3 justify-end items-center py-2">
-                <button type="button" onClick={()=>setOpen(false)} className="px-4 h-10 flex items-center justify-center rounded border">Cancelar</button>
-                <button type="submit" className="px-4 h-10 flex items-center justify-center rounded bg-teal-500 text-white">Salvar</button>
-              </div>
-              </form>
+        <Modal
+          title={editing ? 'Editar caixinha' : 'Nova caixinha'}
+          onClose={() => {
+            setFormError(null)
+            setOpen(false)
+          }}
+        >
+          {formError && (
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/20">
+              {formError}
             </div>
-          </div>
+          )}
+          <form
+            onSubmit={(e) => handleSave(e)}
+            className="space-y-5"
+          >
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Nome
+              </label>
+
+              <input
+                placeholder="Ex: Viagem"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Emoji (opcional)
+              </label>
+
+              <input
+                placeholder="🚗"
+                value={emoji}
+                onChange={(e) => setEmoji(e.target.value)}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['🚗','✈️','🆘','💻','🏠','🎮','📱','💰'].map((em) => (
+                  <button
+                    key={em}
+                    type="button"
+                    onClick={() => setEmoji(em)}
+                    className="
+                      flex h-10 w-10 items-center justify-center
+                      rounded-xl
+                      border border-[var(--border)]
+                      bg-[var(--surface)]
+                      transition-colors
+                      hover:bg-[var(--surface-secondary)]
+                    "
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Valor
+              </label>
+
+              <CurrencyInput
+                value={amount}
+                onChange={setAmount}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormError(null)
+                  setOpen(false)
+                }}
+                className="
+                  h-11 rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-5
+                  text-sm font-medium
+                  text-[var(--text-primary)]
+                  transition
+                  hover:bg-[var(--surface-secondary)]
+                "
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  h-11 rounded-2xl
+                  bg-[var(--primary)]
+                  px-5
+                  text-sm font-medium text-white
+                  transition-all duration-200
+                  hover:bg-[var(--primary-hover)]
+                  hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+                "
+              >
+                Salvar
+              </button>
+
+            </div>
+
+          </form>
         </Modal>
       )}
 
@@ -135,20 +466,37 @@ export default function Boxes() {
         onCancel={() => setConfirmDelete(null)}
         onConfirm={async () => {
           if (!user || !confirmDelete) return
+
           try {
-            await deleteSavingBoxFromUser(user.uid, confirmDelete.id)
+            await deleteSavingBoxFromUser(
+              user.uid,
+              confirmDelete.id
+            )
+
             removeSavingBox(confirmDelete.id)
-            setToast({ message: 'Caixinha excluída', variant: 'success' })
+
+            setToast({
+              message: 'Caixinha excluída',
+              variant: 'success'
+            })
           } catch (err) {
             console.error(err)
-            setToast({ message: 'Erro ao excluir caixinha', variant: 'error' })
+
+            setToast({
+              message: 'Erro ao excluir caixinha',
+              variant: 'error'
+            })
           } finally {
             setConfirmDelete(null)
           }
         }}
       />
 
-      <Toast message={toast} onClose={() => setToast(null)} />
+      <Toast
+        message={toast}
+        onClose={() => setToast(null)}
+      />
+
     </div>
   )
 }

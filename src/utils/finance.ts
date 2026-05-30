@@ -2,6 +2,14 @@ import { differenceInCalendarDays, addMonths, subMonths, lastDayOfMonth } from '
 import { FixedExpense, VariableExpense } from '../types'
 import { getLocalISODateFromDate } from './date'
 
+export const currency = new Intl.NumberFormat(
+  'pt-BR',
+  {
+    style: 'currency',
+    currency: 'BRL'
+  }
+)
+
 export type Allocations = {
   needs: number
   wants: number
@@ -201,4 +209,16 @@ export function computeSmartDailyProjection(
   const tomorrowBudget = projection.length > 1 ? projection[1].budget : 0
 
   return { todayBudget: Math.round(todayBudget * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentUpToToday * 100) / 100, projection, tomorrowBudget }
+}
+
+export function getUnifiedVariableExpenses(variableExpenses, sharedAdjustments) {
+  const sharedAsExpenses = (sharedAdjustments || []).map(a => ({
+    id: a.id,
+    title: 'Compartilhado',
+    amount: a.amount,
+    category: 'shared',
+    date: a.date
+  }))
+
+  return [...variableExpenses, ...sharedAsExpenses]
 }

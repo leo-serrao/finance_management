@@ -13,6 +13,8 @@ import { DebtSettlement } from '../types/shared'
 import { getUserProfile } from '../services/firestore'
 import CurrencyInput from '../components/CurrencyInput'
 import { getLocalISODate } from '../utils/date'
+import SharedExpensePageCard from '../components/SharedExpensePageCard'
+import { ChevronDown } from 'lucide-react'
 
 export default function SharedGroupDetails() {
   const { groupId } = useParams()
@@ -152,107 +154,384 @@ export default function SharedGroupDetails() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col gap-8">
+
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <Link to="/shared" className="text-sm text-teal-500">&larr; Voltar</Link>
-          <h2 className="text-2xl font-bold">{group?.name ?? 'Grupo'}</h2>
+          <Link
+            to="/shared"
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+          >
+            ← Voltar
+          </Link>
+
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)] mt-1">
+            {group?.name ?? 'Grupo'}
+          </h1>
+
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Visão geral das despesas compartilhadas e saldos do grupo.
+          </p>
         </div>
-        <div>
-          <button onClick={() => setOpenNew(true)} className="bg-teal-500 text-white px-3 py-1 rounded">+ Nova despesa</button>
-        </div>
+
+        <button
+          onClick={() => setOpenNew(true)}
+          className="
+            h-12 w-full md:w-auto
+            rounded-2xl
+            bg-[var(--primary)]
+            px-5
+            text-sm font-medium text-white
+            transition-all duration-200
+            hover:bg-[var(--primaryHover)]
+            hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+            active:scale-[0.99]
+          "
+        >
+          + Nova despesa
+        </button>
       </div>
 
-      <div className="mb-4">
-        <h3 className="font-semibold">Saldo</h3>
-        {settlements.length === 0 && <div>Nenhum saldo entre vocês</div>}
-        {settlements.map(s => {
-          const remaining = adjustedSettlements.find(a => a.from === s.from && a.to === s.to)?.amount ?? 0
-          return (
-            <div key={`${s.from}-${s.to}`} className="text-sm flex items-center justify-between">
-              <div>
-                {profiles[s.from]?.displayName ?? profiles[s.from]?.email ?? s.from} deve R$ {s.amount.toFixed(2)} para {profiles[s.to]?.displayName ?? profiles[s.to]?.email ?? s.to}
-                {remaining === 0 && <span className="ml-2 text-xs text-green-600">(Quitado)</span>}
-                {remaining > 0 && <span className="ml-2 text-xs text-gray-500">(Restante R$ {remaining.toFixed(2)})</span>}
-              </div>
-              <div className="flex items-center gap-2">
-                <button disabled={paymentsPermissionDenied || remaining <= 0} onClick={() => { setPayFrom(s.from); setPayTo(s.to); setPayAmount(remaining > 0 ? remaining : s.amount); setPayModalOpen(true) }} className={`text-sm px-2 py-1 rounded border ${paymentsPermissionDenied ? 'opacity-50 cursor-not-allowed' : 'text-teal-600'}`}>{remaining > 0 ? 'Quitar dívida' : 'Quitar dívida'}</button>
-              </div>
-            </div>
-          )
-        })}
+      {/* BALANCES */}
+      <section className="card p-5 md:p-6 flex flex-col">
 
-        <div className="mt-3">
-          <h4 className="font-semibold">Pagamentos registrados</h4>
-          {payments.length === 0 && <div className="text-sm text-gray-500">Nenhum pagamento</div>}
-          {payments.map(p => (
-            <div key={p.id} className="text-sm flex items-center justify-between">
-              <div>
-                {profiles[p.fromUserId]?.displayName ?? p.fromUserId} {' → '} {profiles[p.toUserId]?.displayName ?? p.toUserId}: R$ {p.amount.toFixed(2)}
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => handleDeletePayment(p.id)} className="text-sm text-red-500 px-2 py-1 rounded border">Remover</button>
-              </div>
-            </div>
-          ))}
+        {/* HEADER DO CARD */}
+        <div className="mb-0">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+            Saldos
+          </h3>
         </div>
-      </div>
 
-      <div className="mb-4">
-        <h3 className="font-semibold">Despesas</h3>
-        <div className="space-y-2">
-          {expenses.map(ex => (
-                      <div key={ex.id} className="p-3 bg-white dark:bg-gray-800 rounded shadow">
-                        <div className="flex items-center gap-2 mt-2">
-                          <button onClick={() => handleEditClick(ex)} className="text-sm text-teal-600 px-2 py-1 rounded border">✎ Editar</button>
-                          <button onClick={() => handleDeleteClick(ex)} className="text-sm text-red-500 px-2 py-1 rounded border">🗑 Excluir</button>
-                        </div>
-              <div className="flex justify-between">
-                <div>
-                  <div className="font-medium">{ex.title}</div>
-                  <div className="text-sm text-gray-500">{new Date(ex.date).toLocaleDateString()}</div>
+        {/* CONTENT */}
+        <div className="flex flex-col gap-4">
+          {settlements.length === 0 ? (
+            <p className="text-sm text-[var(--text-secondary)]">
+              Nenhum saldo entre vocês
+            </p>
+          ) : (
+            settlements.map(s => {
+              const remaining =
+                adjustedSettlements.find(a => a.from === s.from && a.to === s.to)
+                  ?.amount ?? 0
+
+              return (
+                <div
+                  key={`${s.from}-${s.to}`}
+                  className="
+                    flex flex-col md:flex-row md:items-center md:justify-between
+                    gap-3 py-3 border-b border-[var(--divider)]
+                    last:border-0
+                  "
+                >
+                  {/* TEXTO */}
+                  <div className="text-sm text-[var(--text-secondary)] leading-5">
+                    <span className="text-[var(--text-primary)] font-medium">
+                      {profiles[s.from]?.displayName ?? profiles[s.from]?.email ?? s.from}
+                    </span>
+
+                    {' deve '}
+
+                    <span className="text-[var(--text-primary)] font-medium">
+                      R$ {s.amount.toFixed(2)}
+                    </span>
+
+                    {' para '}
+
+                    <span className="text-[var(--text-primary)] font-medium">
+                      {profiles[s.to]?.displayName ?? profiles[s.to]?.email ?? s.to}
+                    </span>
+
+                    {remaining === 0 && (
+                      <span className="ml-2 text-xs text-[var(--success)] font-medium">
+                        Quitado
+                      </span>
+                    )}
+
+                    {remaining > 0 && (
+                      <span className="ml-2 text-xs text-[var(--text-muted)]">
+                        Restante R$ {remaining.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* AÇÃO */}
+                  <div className="flex justify-end md:justify-end">
+                    <button
+                      disabled={paymentsPermissionDenied || remaining <= 0}
+                      onClick={() => {
+                        setPayFrom(s.from)
+                        setPayTo(s.to)
+                        setPayAmount(remaining > 0 ? remaining : s.amount)
+                        setPayModalOpen(true)
+                      }}
+                      className={`
+                        h-10 w-full md:w-auto
+                        px-4 rounded-xl text-sm font-medium
+                        border transition
+                        ${
+                          paymentsPermissionDenied || remaining <= 0
+                            ? 'opacity-40 cursor-not-allowed border-[var(--border)] text-[var(--text-muted)]'
+                            : 'border-[var(--border)] text-[var(--primary)] hover:bg-[var(--surface-secondary)]'
+                        }
+                      `}
+                    >
+                      Quitar dívida
+                    </button>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold">R$ {ex.amount.toFixed(2)}</div>
-                  <div className="text-sm">Pago por: {profiles[ex.paidBy]?.displayName ?? profiles[ex.paidBy]?.email ?? ex.paidBy}</div>
-                </div>
-              </div>
-              {/* participants implicit for group; omitted in compact view */}
-            </div>
-          ))}
-          {expenses.length === 0 && <div className="p-3 bg-white dark:bg-gray-800 rounded">Nenhuma despesa</div>}
-        </div>
-      </div>
+              )
+            })
+          )}
 
+          {/* PAYMENTS */}
+          <div className="pt-4">
+            <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+              Pagamentos registrados
+            </h4>
+
+            {payments.length === 0 ? (
+              <p className="text-sm text-[var(--text-secondary)]">
+                Nenhum pagamento registrado
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {payments.map(p => (
+                  <div
+                    key={p.id}
+                    className="
+                      flex items-center justify-between
+                      rounded-2xl border border-[var(--border)]
+                      bg-[var(--surface)]
+                      px-4 py-3
+                    "
+                  >
+                    <div className="text-sm text-[var(--text-secondary)]">
+                      <span className="text-[var(--text-primary)] font-medium">
+                        {profiles[p.fromUserId]?.displayName ?? p.fromUserId}
+                      </span>
+
+                      {' → '}
+
+                      <span className="text-[var(--text-primary)] font-medium">
+                        {profiles[p.toUserId]?.displayName ?? p.toUserId}
+                      </span>
+
+                      {': R$ '}
+
+                      <span className="text-[var(--text-primary)] font-semibold">
+                        {p.amount.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeletePayment(p.id)}
+                      className="
+                        h-8 px-3 rounded-xl
+                        text-sm font-medium text-red-500
+                        border border-[var(--border)]
+                        hover:bg-red-50
+                        transition
+                      "
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* EXPENSES */}
+      <section className="flex flex-col gap-4">
+        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+          Despesas
+        </h3>
+
+        {expenses.length === 0 ? (
+          <div className="card p-6 text-sm text-[var(--text-secondary)]">
+            Nenhuma despesa registrada
+          </div>
+        ) : (
+          expenses.map(ex => (
+            <SharedExpensePageCard
+              key={ex.id}
+              expense={ex}
+              paidByLabel={
+                profiles[ex.paidBy]?.displayName ??
+                profiles[ex.paidBy]?.email ??
+                ex.paidBy
+              }
+              dateLabel={new Date(ex.date).toLocaleDateString()}
+              onEdit={() => handleEditClick(ex)}
+              onDelete={() => handleDeleteClick(ex)}
+            />
+          ))
+        )}
+      </section>
+
+      {/* MODALS */}
       {openNew && (
         <Modal title="Nova despesa" onClose={() => setOpenNew(false)}>
-          <form onSubmit={(e)=>handleCreate(e)} className="space-y-3">
-            <input value={form.title} onChange={e=>setForm(f=>({ ...f, title: e.target.value }))} placeholder="Título" className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" />
+          <form onSubmit={handleCreate} className="space-y-5">
 
+            {/* TÍTULO */}
             <div>
-              <CurrencyInput value={form.amount} onChange={v=>setForm(f=>({ ...f, amount: v }))} className="w-full p-2 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100" placeholder="Valor" />
-              {group && group.members && group.members.length > 0 && (
-                <div className="text-sm text-gray-500 mt-1">Cada participante pagará: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((form.amount || 0) / group.members.length)}</div>
-              )}
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Título
+              </label>
+
+              <input
+                value={form.title}
+                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="Ex: Pizza, mercado..."
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  placeholder:text-[var(--text-muted)]
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
             </div>
 
+            {/* VALOR */}
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-300">Quem pagou?</label>
-              <select value={form.paidBy} onChange={e=>setForm(f=>({ ...f, paidBy: e.target.value }))} className="w-full p-2 mt-1 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100">
-                {group?.members?.map(uid => (
-                  <option key={uid} value={uid}>{profiles[uid]?.displayName ?? profiles[uid]?.email ?? uid}</option>
-                ))}
-              </select>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Valor
+              </label>
+
+              <CurrencyInput
+                value={form.amount}
+                onChange={v => setForm(f => ({ ...f, amount: v }))}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
             </div>
 
+            {/* QUEM PAGOU */}
             <div>
-              <label className="text-sm text-gray-600 dark:text-gray-300">Data</label>
-              <input type="date" value={form.date} onChange={e=>setForm(f=>({ ...f, date: e.target.value }))} className="w-full p-2 h-10 mt-1 border rounded bg-white dark:bg-gray-700 text-black dark:text-gray-100 appearance-none box-border text-left leading-6 max-w-full" />
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Pago por
+              </label>
+
+              <div className="relative">
+                <select
+                  value={form.paidBy}
+                  onChange={e => setForm(f => ({ ...f, paidBy: e.target.value }))}
+                  className="
+                    h-12 w-full rounded-2xl
+                    border border-[var(--border)]
+                    bg-[var(--surface)]
+                    px-4 pr-10
+                    text-sm text-[var(--text-primary)]
+                    outline-none
+                    appearance-none
+                    transition
+                    focus:border-[var(--primary)]
+                    focus:ring-4
+                    focus:ring-[rgba(96,136,121,0.10)]
+                  "
+                >
+                  {group?.members?.map(uid => (
+                    <option key={uid} value={uid}>
+                      {profiles[uid]?.displayName ?? profiles[uid]?.email ?? uid}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown
+                  size={16}
+                  className="
+                    pointer-events-none
+                    absolute
+                    right-4
+                    top-1/2
+                    -translate-y-1/2
+                    text-[var(--text-muted)]
+                  "
+                />
+              </div>
             </div>
 
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={()=>setOpenNew(false)} className="px-3 py-1 rounded border">Cancelar</button>
-              <button type="submit" className="px-3 py-1 rounded bg-teal-500 text-white">Salvar</button>
+            {/* DATA */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
+                Data
+              </label>
+
+              <input
+                type="date"
+                value={form.date}
+                onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                className="
+                  h-12 w-full rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-4
+                  text-sm text-[var(--text-primary)]
+                  outline-none
+                  transition
+                  focus:border-[var(--primary)]
+                  focus:ring-4
+                  focus:ring-[rgba(96,136,121,0.10)]
+                "
+              />
+            </div>
+
+            {/* AÇÕES */}
+            <div className="flex justify-end gap-3 pt-2">
+
+              <button
+                type="button"
+                onClick={() => setOpenNew(false)}
+                className="
+                  h-11 rounded-2xl
+                  border border-[var(--border)]
+                  bg-[var(--surface)]
+                  px-5
+                  text-sm font-medium
+                  text-[var(--text-primary)]
+                  transition
+                  hover:bg-[var(--surface-secondary)]
+                "
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  h-11 rounded-2xl
+                  bg-[var(--primary)]
+                  px-5
+                  text-sm font-medium text-white
+                  transition-all duration-200
+                  hover:bg-[var(--primary-hover)]
+                  hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
+                "
+              >
+                Salvar
+              </button>
+
             </div>
           </form>
         </Modal>
@@ -260,38 +539,64 @@ export default function SharedGroupDetails() {
 
       {payModalOpen && (
         <Modal title="Quitar dívida" onClose={() => setPayModalOpen(false)}>
-          <div className="space-y-3">
-            <div className="text-sm">De: {profiles[payFrom ?? '']?.displayName ?? payFrom}</div>
-            <div className="text-sm">Para: {profiles[payTo ?? '']?.displayName ?? payTo}</div>
-            <div>
-              <label className="text-sm">Valor</label>
-              <CurrencyInput value={payAmount} onChange={setPayAmount} className="w-full p-2 mt-1" />
+          <div className="flex flex-col gap-4">
+
+            <div className="text-sm text-[var(--text-secondary)]">
+              De: {profiles[payFrom ?? '']?.displayName ?? payFrom}
             </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setPayModalOpen(false)} className="px-3 py-1 rounded border">Cancelar</button>
-              <button onClick={async () => {
-                if (!groupId || !payFrom || !payTo) return
-                try {
-                  await createDebtSettlement(groupId, { fromUserId: payFrom, toUserId: payTo, amount: payAmount, groupId })
-                  setToast({ message: 'Pagamento registrado', variant: 'success' })
-                  setPayModalOpen(false)
-                } catch (err) {
-                  console.error('create payment error', err)
-                  const code = (err && (err as any).code) || ''
-                  if (code === 'permission-denied' || (err && (err as any).message && (err as any).message.includes('Missing or insufficient permissions'))) {
-                    setPaymentsPermissionDenied(true)
-                    setToast({ message: 'Sem permissão para registrar quitação. Atualize as regras do Firestore.', variant: 'error' })
-                  } else {
+
+            <div className="text-sm text-[var(--text-secondary)]">
+              Para: {profiles[payTo ?? '']?.displayName ?? payTo}
+            </div>
+
+            <CurrencyInput
+              value={payAmount}
+              onChange={setPayAmount}
+              className="h-12 px-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-sm"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setPayModalOpen(false)}
+                className="h-11 px-4 rounded-2xl border border-[var(--border)] text-sm"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (!groupId || !payFrom || !payTo) return
+                  try {
+                    await createDebtSettlement(groupId, {
+                      fromUserId: payFrom,
+                      toUserId: payTo,
+                      amount: payAmount,
+                      groupId
+                    })
+
+                    setToast({ message: 'Pagamento registrado', variant: 'success' })
+                    setPayModalOpen(false)
+                  } catch (err) {
+                    console.error(err)
                     setToast({ message: 'Erro ao registrar pagamento', variant: 'error' })
                   }
-                }
-              }} className="px-3 py-1 rounded bg-teal-500 text-white">Confirmar</button>
+                }}
+                className="
+                  h-11 px-5 rounded-2xl
+                  bg-[var(--primary)]
+                  text-white text-sm font-medium
+                  hover:bg-[var(--primaryHover)]
+                  transition
+                "
+              >
+                Confirmar
+              </button>
             </div>
           </div>
         </Modal>
       )}
 
-      <Toast message={toast} onClose={() => setToast(null)} />
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </div>
   )
 }

@@ -6,12 +6,14 @@ type State = {
   variableExpenses: VariableExpense[]
   fixedExpenses: FixedExpense[]
   savingBoxes: import('../types').SavingBox[]
+  sharedAdjustments: any[]
   setProfile: (p: Profile | null) => void
   setFixedExpenses: (f: FixedExpense[]) => void
   setVariableExpenses: (v: VariableExpense[]) => void
   addVariableExpense: (e: VariableExpense) => void
   addFixedExpense: (e: FixedExpense) => void
   setSavingBoxes: (b: import('../types').SavingBox[]) => void
+  setSharedAdjustments: (data: any[]) => void
   addSavingBox: (b: import('../types').SavingBox) => void
   updateSavingBox: (b: import('../types').SavingBox) => void
   removeSavingBox: (id: string) => void
@@ -22,6 +24,7 @@ export const useFinanceStore = create<State>((set) => ({
   variableExpenses: [],
   fixedExpenses: [],
   savingBoxes: [],
+  sharedAdjustments: [],
   setProfile: (p) => set((s) => ({
     profile: p,
     fixedExpenses: p && (p as any).fixedExpenses !== undefined ? (p as any).fixedExpenses : s.fixedExpenses,
@@ -30,6 +33,7 @@ export const useFinanceStore = create<State>((set) => ({
   setFixedExpenses: (f) => set({ fixedExpenses: f }),
   setVariableExpenses: (v) => set({ variableExpenses: v }),
   setSavingBoxes: (b) => set({ savingBoxes: b }),
+  setSharedAdjustments: (data) => set({ sharedAdjustments: data }),
   addVariableExpense: (e) => set((s) => ({ variableExpenses: [...s.variableExpenses, e] })),
   addFixedExpense: (e) => set((s) => ({ fixedExpenses: [...s.fixedExpenses, e] }))
   ,
