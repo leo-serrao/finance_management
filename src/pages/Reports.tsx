@@ -11,6 +11,7 @@ const COLORS = ['#0ea5a4', '#60a5fa', '#f97316', '#f43f5e', '#a78bfa', '#fb7185'
 export default function Reports() {
   const { variableExpenses, sharedAdjustments, fixedExpenses} = useFinanceStore()
   const [days, setDays] = useState(30)
+  const isMobile = window.innerWidth < 640
 
   const since = subDays(new Date(), days - 1)
 
@@ -229,14 +230,22 @@ export default function Reports() {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ value }) =>`R$ ${value.toLocaleString('pt-BR')}`}
+                  label={isMobile ? false : ({ value }) =>`R$ ${value.toLocaleString('pt-BR')}`}
                 >
                   {categoryData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
 
-                <Legend />
+                <Legend
+                  formatter={(value) => {
+                    const item = categoryData.find(
+                      x => x.name === value
+                    )
+
+                    return `${value} — R$ ${item?.value.toLocaleString('pt-BR') ?? 0}`
+                  }}
+                />
                 <Tooltip formatter={(value: number) =>`R$ ${value.toLocaleString('pt-BR')}`} />
               </PieChart>
             </ResponsiveContainer>
@@ -259,7 +268,7 @@ export default function Reports() {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ value }) =>
+                  label={isMobile ? false : ({ value }) =>
                     `R$ ${value.toLocaleString('pt-BR')}`
                   }
                 >
@@ -278,9 +287,13 @@ export default function Reports() {
                 />
 
                 <Legend
-                  formatter={(value) =>
-                    formatFixedCategory(value)
-                  }
+                  formatter={(value) => {
+                    const item = fixedCategoryData.find(
+                      x => x.name === value
+                    )
+
+                    return `${formatFixedCategory(value)} — R$ ${item?.value.toLocaleString('pt-BR') ?? 0}`
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
