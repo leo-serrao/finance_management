@@ -147,7 +147,7 @@ export function computeSmartDailyProjection(
   payDay: number,
   savingsPercent: number = 0.2,
   today: Date = new Date()
-): { todayBudget: number; daysRemaining: number; totalRemaining: number; totalVariableSpent: number; projection: DailyProjection[]; tomorrowBudget: number } {
+): { todayBudget: number; daysRemaining: number; totalRemaining: number; totalVariableSpent: number; projection: DailyProjection[]; tomorrowBudget: number; startsNewCycleTomorrow: boolean } {
   const allocations = calculate50_30_20(netSalary, fixedExpenses, savingsPercent)
 
   const nextPay = getNextPayDate(today, payDay)
@@ -183,7 +183,7 @@ export function computeSmartDailyProjection(
 
   const daysRemaining = daysLeft
   if (daysRemaining === 0) {
-    return { todayBudget: 0, daysRemaining: 0, totalRemaining: 0, totalVariableSpent: 0, projection: [], tomorrowBudget: 0 }
+    return { todayBudget: 0, daysRemaining: 0, totalRemaining: 0, totalVariableSpent: 0, projection: [], tomorrowBudget: 0, startsNewCycleTomorrow: false }
   }
 
   const projection: DailyProjection[] = []
@@ -206,9 +206,26 @@ export function computeSmartDailyProjection(
   }
 
   const todayBudget = projection[0]?.budget ?? 0
-  const tomorrowBudget = projection.length > 1 ? projection[1].budget : 0
+  let tomorrowBudget = 0
 
-  return { todayBudget: Math.round(todayBudget * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentUpToToday * 100) / 100, projection, tomorrowBudget }
+  if (projection.length > 1) {
+    tomorrowBudget = projection[1].budget
+  } else {
+    const nextCycleAvailable = allocations.availableForVariables
+
+    const nextCyclePayDate = getNextPayDate(nextPay, payDay)
+
+    const nextCycleDays = daysUntil(nextCyclePayDate, nextPay)
+
+    tomorrowBudget =
+      nextCycleDays > 0
+        ? Math.round((nextCycleAvailable / nextCycleDays) * 100) / 100
+        : 0
+  }
+
+  const startsNewCycleTomorrow = daysRemaining === 1
+
+  return { todayBudget: Math.round(todayBudget * 100) / 100, daysRemaining, totalRemaining: Math.round(totalRemaining * 100) / 100, totalVariableSpent: Math.round(spentUpToToday * 100) / 100, projection, tomorrowBudget, startsNewCycleTomorrow}
 }
 
 export function getUnifiedVariableExpenses(variableExpenses, sharedAdjustments) {

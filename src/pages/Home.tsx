@@ -292,7 +292,9 @@ export default function Home() {
 
           <div
             className={`mt-5 text-sm ${
-              proj.tomorrowBudget > proj.todayBudget
+              proj.startsNewCycleTomorrow
+                ? 'text-[var(--text-secondary)]'
+                : proj.tomorrowBudget > proj.todayBudget
                 ? 'text-emerald-500'
                 : proj.tomorrowBudget < proj.todayBudget
                 ? 'text-red-500'
@@ -302,7 +304,9 @@ export default function Home() {
             Amanhã: {currency.format(proj.tomorrowBudget)}
 
             <span className="ml-2 text-xs opacity-80">
-              {proj.tomorrowBudget > proj.todayBudget
+              {proj.startsNewCycleTomorrow
+                ? 'novo ciclo amanhã'
+                : proj.tomorrowBudget > proj.todayBudget
                 ? '↑ você gastou menos hoje'
                 : proj.tomorrowBudget < proj.todayBudget
                 ? '↓ hoje você extrapolou o orçamento'
