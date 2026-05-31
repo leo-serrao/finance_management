@@ -119,7 +119,7 @@ export default function FixedExpenses() {
                 border border-[var(--border)]
                 bg-[var(--surface)]
                 px-4
-                text-sm text-[var(--text-primary)]
+                text-base text-[var(--text-primary)]
                 outline-none
                 transition
                 placeholder:text-[var(--text-muted)]
@@ -143,7 +143,7 @@ export default function FixedExpenses() {
                 border border-[var(--border)]
                 bg-[var(--surface)]
                 px-4
-                text-sm text-[var(--text-primary)]
+                text-base text-[var(--text-primary)]
                 outline-none
                 transition
                 focus:border-[var(--primary)]
@@ -452,7 +452,7 @@ function EditFixedForm({
             border border-[var(--border)]
             bg-[var(--surface)]
             px-4
-            text-sm text-[var(--text-primary)]
+            text-base text-[var(--text-primary)]
             outline-none
             transition
             focus:border-[var(--primary)]
@@ -475,7 +475,7 @@ function EditFixedForm({
             border border-[var(--border)]
             bg-[var(--surface)]
             px-4
-            text-sm text-[var(--text-primary)]
+            text-base text-[var(--text-primary)]
             outline-none
             transition
             focus:border-[var(--primary)]

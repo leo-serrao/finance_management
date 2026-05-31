@@ -111,7 +111,7 @@ export default function Register() {
               placeholder="seuemail@exemplo.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-[15px] text-[var(--text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(96,136,121,0.10)]"
+              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-base text-[var(--text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(96,136,121,0.10)]"
             />
           </div>
 
@@ -126,7 +126,7 @@ export default function Register() {
               placeholder="Sua senha"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-[15px] text-[var(--text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(96,136,121,0.10)]"
+              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-base text-[var(--text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(96,136,121,0.10)]"
             />
           </div>
 
@@ -141,7 +141,7 @@ export default function Register() {
               placeholder="Confirme sua senha"
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
-              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-[15px] text-[var(--text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(96,136,121,0.10)]"
+              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 text-base text-[var(--text-primary)] outline-none transition-all duration-200 placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(96,136,121,0.10)]"
             />
           </div>
 

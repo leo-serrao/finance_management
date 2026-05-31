@@ -17,6 +17,7 @@ import Boxes from './pages/Boxes'
 import SharedGroups from './pages/SharedGroups'
 import SharedGroupDetails from './pages/SharedGroupDetails'
 import SplashScreen from './pages/SplashScreen'
+import ScrollToTop from './utils/scrollToTop'
 
 export default function App() {
   const [booting, setBooting] = useState(true)
@@ -40,6 +41,8 @@ export default function App() {
 
   return (
     <AuthProvider>
+      <ScrollToTop />
+      
       <Routes>
 
         <Route element={<AuthLayout />}>

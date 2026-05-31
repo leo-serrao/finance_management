@@ -165,12 +165,13 @@ export default function Home() {
         <button
           onClick={() => setOpenAdd(true)}
           className="
-            h-11 rounded-2xl
+            h-12 w-full sm:w-auto
+            rounded-2xl
             bg-[var(--primary)]
             px-5
             text-sm font-medium text-white
             transition-all duration-200
-            hover:bg-[var(--primaryHover)]
+            hover:bg-[var(--primary-hover)]
             hover:shadow-[0_10px_24px_rgba(96,136,121,0.18)]
             active:scale-[0.99]
           "
@@ -363,7 +364,7 @@ export default function Home() {
         >
           <form
             onSubmit={(e) => handleQuickAdd(e)}
-            className="space-y-4"
+            className="space-y-4 overflow-x-hidden w-full min-w-0"
           >
             <div>
               <label className="mb-2 block text-sm font-medium text-[var(--text-secondary)]">
@@ -379,7 +380,7 @@ export default function Home() {
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm
+                  text-base
                   outline-none
                   transition
                   placeholder:text-[var(--text-muted)]
@@ -403,7 +404,7 @@ export default function Home() {
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm
+                  text-base
                   outline-none
                   transition
                   focus:border-[var(--primary)]
@@ -423,16 +424,13 @@ export default function Home() {
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
                 className="
-                  h-12 w-full rounded-2xl
+                  appearance-none
+                  h-12 w-full
+                  rounded-2xl
                   border border-[var(--border)]
                   bg-[var(--surface)]
-                  px-4
+                  px-3
                   text-sm
-                  outline-none
-                  transition
-                  focus:border-[var(--primary)]
-                  focus:ring-4
-                  focus:ring-[rgba(96,136,121,0.10)]
                 "
               />
             </div>

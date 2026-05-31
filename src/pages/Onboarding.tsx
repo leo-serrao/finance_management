@@ -64,7 +64,7 @@ export default function Onboarding() {
               value={displayName}
               onChange={e => setDisplayName(e.target.value)}
               placeholder="Como você quer ser identificado"
-              className="h-12 w-full px-4"
+              className="h-12 w-full px-4 text-base"
             />
           </div>
 
@@ -79,7 +79,7 @@ export default function Onboarding() {
               step="0.01"
               value={netSalary}
               onChange={e => setNetSalary(Number(e.target.value))}
-              className="h-12 w-full px-4"
+              className="h-12 w-full px-4 text-base"
             />
           </div>
 
@@ -95,7 +95,7 @@ export default function Onboarding() {
               max={31}
               value={payDay}
               onChange={e => setPayDay(Number(e.target.value))}
-              className="h-12 w-full px-4"
+              className="h-12 w-full px-4 text-base"
             />
           </div>
 

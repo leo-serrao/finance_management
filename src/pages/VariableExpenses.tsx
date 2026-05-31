@@ -351,7 +351,7 @@ export default function VariableExpenses() {
                 border border-[var(--border)]
                 bg-[var(--surface)]
                 px-4
-                text-sm text-[var(--text-primary)]
+                text-base text-[var(--text-primary)]
                 outline-none
                 transition
                 placeholder:text-[var(--text-muted)]
@@ -375,7 +375,7 @@ export default function VariableExpenses() {
                 border border-[var(--border)]
                 bg-[var(--surface)]
                 px-4
-                text-sm text-[var(--text-primary)]
+                text-base text-[var(--text-primary)]
                 outline-none
                 transition
                 focus:border-[var(--primary)]
@@ -395,6 +395,7 @@ export default function VariableExpenses() {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="
+                appearance-none
                 h-12 w-full rounded-2xl
                 border border-[var(--border)]
                 bg-[var(--surface)]
@@ -635,6 +636,7 @@ export default function VariableExpenses() {
                   })
                 }
                 className="
+                  appearance-none
                   h-12 w-full rounded-2xl
                   border border-[var(--border)]
                   bg-[var(--surface)]

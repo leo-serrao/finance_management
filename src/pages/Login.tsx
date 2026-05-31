@@ -171,7 +171,7 @@ export default function Login() {
                 border border-[var(--border)]
                 bg-[var(--surface)]
                 px-4
-                text-[15px]
+                text-base
                 text-[var(--text-primary)]
                 outline-none
                 transition-all duration-200
@@ -211,7 +211,7 @@ export default function Login() {
                 border border-[var(--border)]
                 bg-[var(--surface)]
                 px-4
-                text-[15px]
+                text-base
                 text-[var(--text-primary)]
                 outline-none
                 transition-all duration-200

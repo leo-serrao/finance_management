@@ -392,7 +392,7 @@ export default function SharedGroupDetails() {
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm text-[var(--text-primary)]
+                  text-base text-[var(--text-primary)]
                   outline-none
                   transition
                   placeholder:text-[var(--text-muted)]
@@ -417,7 +417,7 @@ export default function SharedGroupDetails() {
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm text-[var(--text-primary)]
+                  text-base text-[var(--text-primary)]
                   outline-none
                   transition
                   focus:border-[var(--primary)]
@@ -483,11 +483,12 @@ export default function SharedGroupDetails() {
                 value={form.date}
                 onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
                 className="
+                  appearance-none
                   h-12 w-full rounded-2xl
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm text-[var(--text-primary)]
+                  text-base text-[var(--text-primary)]
                   outline-none
                   transition
                   focus:border-[var(--primary)]
@@ -552,7 +553,7 @@ export default function SharedGroupDetails() {
             <CurrencyInput
               value={payAmount}
               onChange={setPayAmount}
-              className="h-12 px-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-sm"
+              className="h-12 px-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-base"
             />
 
             <div className="flex justify-end gap-3">

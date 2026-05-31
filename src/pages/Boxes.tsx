@@ -337,7 +337,7 @@ export default function Boxes() {
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm text-[var(--text-primary)]
+                  text-base text-[var(--text-primary)]
                   outline-none
                   transition
                   placeholder:text-[var(--text-muted)]
@@ -362,7 +362,7 @@ export default function Boxes() {
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm text-[var(--text-primary)]
+                  text-base text-[var(--text-primary)]
                   outline-none
                   transition
                   placeholder:text-[var(--text-muted)]
@@ -373,7 +373,7 @@ export default function Boxes() {
               />
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {['🚗','✈️','🆘','💻','🏠','🎮','📱','💰'].map((em) => (
+                {['🚗','✈️','🆘','💻','🏠','🎮','📱'].map((em) => (
                   <button
                     key={em}
                     type="button"
@@ -406,7 +406,7 @@ export default function Boxes() {
                   border border-[var(--border)]
                   bg-[var(--surface)]
                   px-4
-                  text-sm text-[var(--text-primary)]
+                  text-base text-[var(--text-primary)]
                   outline-none
                   transition
                   focus:border-[var(--primary)]

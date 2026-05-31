@@ -135,7 +135,7 @@ export default function Settings() {
             <input
               value={displayName}
               onChange={e => setDisplayName(e.target.value)}
-              className="h-12 w-full px-4"
+              className="h-12 w-full px-4 text-base"
             />
           </div>
 
@@ -146,7 +146,7 @@ export default function Settings() {
             <CurrencyInput
               value={netSalary}
               onChange={setNetSalary}
-              className="h-12 w-full px-4"
+              className="h-12 w-full px-4 text-base"
             />
           </div>
 
@@ -160,7 +160,7 @@ export default function Settings() {
               max={31}
               value={payDay}
               onChange={e => setPayDay(Number(e.target.value))}
-              className="h-12 w-full px-4"
+              className="h-12 w-full px-4 text-base"
             />
           </div>
 
@@ -174,7 +174,7 @@ export default function Settings() {
               max={100}
               value={savingsPct}
               onChange={e => setSavingsPct(Number(e.target.value))}
-              className="h-12 w-full px-4"
+              className="h-12 w-full px-4 text-base"
             />
           </div>
 
