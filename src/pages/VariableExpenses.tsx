@@ -238,15 +238,12 @@ export default function VariableExpenses() {
   const currentMonth = new Date().getMonth()
   const currentYear = new Date().getFullYear()
 
-  const monthExpenses = allExpenses
-    .filter(item => {
-      const date = new Date(item.date)
+  const currentMonthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
 
-      return (
-        date.getMonth() === currentMonth &&
-        date.getFullYear() === currentYear
-      )
-    })
+  const monthExpenses = allExpenses
+    .filter(item =>
+      item.date.startsWith(currentMonthKey)
+    )
     .reduce(
       (sum, item) => sum + item.amount,
       0

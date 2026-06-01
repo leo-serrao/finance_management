@@ -165,7 +165,7 @@ export function computeSmartDailyProjection(
 
   variableExpenses.forEach(v => {
     const day = v.date.split('T')[0]
-    if (day > prevPayKey && day < nextPayKey) {
+    if (day >= prevPayKey && day < nextPayKey) {
       spentByDay.set(day, (spentByDay.get(day) || 0) + v.amount)
     }
   })
