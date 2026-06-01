@@ -306,11 +306,9 @@ export default function Home() {
             <span className="ml-2 text-xs opacity-80">
               {proj.startsNewCycleTomorrow
                 ? 'novo ciclo amanhã'
-                : proj.tomorrowBudget > proj.todayBudget
+                : proj.spentLessThanPlanned
                 ? '↑ você gastou menos hoje'
-                : proj.tomorrowBudget < proj.todayBudget
-                ? '↓ hoje você extrapolou o orçamento'
-                : 'mesmo que hoje'}
+                : '↓ hoje você gastou mais que o previsto'}
             </span>
           </div>
         </div>
